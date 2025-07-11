@@ -1,7 +1,7 @@
 # scripts/generate_tasks.py
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+sys.stdout.reconfigure(encoding='utf-8')
 import json
 from datetime import datetime
 from sqlalchemy import text
