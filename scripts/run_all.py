@@ -25,6 +25,40 @@ def run_command(cmd, capture=False):
 if __name__ == "__main__":
     playtype = sys.argv[1] if len(sys.argv) > 1 else "千位定1"
 
+    # === 中文 ➜ 拼音映射表 ===
+    PLAYTYPE_MAP = {
+        "万位杀3": "wanwei_sha3",
+        "万位杀1": "wanwei_sha1",
+        "万位定5": "wanwei_ding5",
+        "万位定3": "wanwei_ding3",
+        "万位定1": "wanwei_ding1",
+        "千位杀3": "qianwei_sha3",
+        "千位杀1": "qianwei_sha1",
+        "千位定5": "qianwei_ding5",
+        "千位定3": "qianwei_ding3",
+        "千位定1": "qianwei_ding1",
+        "百位杀3": "baiwei_sha3",
+        "百位杀1": "baiwei_sha1",
+        "百位定5": "baiwei_ding5",
+        "百位定3": "baiwei_ding3",
+        "百位定1": "baiwei_ding1",
+        "十位杀3": "shiwei_sha3",
+        "十位杀1": "shiwei_sha1",
+        "十位定5": "shiwei_ding5",
+        "十位定3": "shiwei_ding3",
+        "十位定1": "shiwei_ding1",
+        "个位杀3": "gewei_sha3",
+        "个位杀1": "gewei_sha1",
+        "个位定5": "gewei_ding5",
+        "个位定3": "gewei_ding3",
+        "个位定1": "gewei_ding1",
+    }
+
+    playtype_en = PLAYTYPE_MAP.get(playtype)
+    if not playtype_en:
+        print(f"❌ 未找到拼音映射: {playtype}")
+        sys.exit(1)
+
     MAX_DURATION = 5.5 * 60 * 60
     start_time = time()
 
@@ -55,7 +89,7 @@ if __name__ == "__main__":
         print("\n⏳ 还有任务或有新组合 ➜ 等待下一轮...")
         sleep(1)
 
-    # === Dump & Upload (固定名 + 覆盖) ===
+    # === Dump & Upload (固定名 + 拼音 Tag) ===
     print("\n📦 正在备份 tasks & best_tasks...")
     MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
     MYSQL_USER = os.getenv("MYSQL_USER", "root")
@@ -71,13 +105,13 @@ if __name__ == "__main__":
 
     # 如果 Release 不存在则先创建
     create_cmd = (
-        f"gh release create p5_{playtype} "
+        f"gh release create p5_{playtype_en} "
         f"--repo suwei8/LottoAI3_HitMatrix_date "
-        f"--title 'p5_{playtype}' || echo 'Release already exists'"
+        f"--title 'p5_{playtype_en}' || echo 'Release already exists'"
     )
 
     upload_cmd = (
-        f"gh release upload p5_{playtype} tasks_best.zip "
+        f"gh release upload p5_{playtype_en} tasks_best.zip "
         f"--clobber --repo suwei8/LottoAI3_HitMatrix_date"
     )
 

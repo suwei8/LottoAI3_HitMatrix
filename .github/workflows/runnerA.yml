@@ -92,7 +92,38 @@ jobs:
 
       - name: Download 当前玩法库
         run: |
-          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/lotto_ai3_hitmatrix_p5_${{ matrix.playtype }}.sql.zip
+          case "${{ matrix.playtype }}" in
+            "万位杀3") PT_EN="wanwei_sha3" ;;
+            "万位杀1") PT_EN="wanwei_sha1" ;;
+            "万位定5") PT_EN="wanwei_ding5" ;;
+            "万位定3") PT_EN="wanwei_ding3" ;;
+            "万位定1") PT_EN="wanwei_ding1" ;;
+            "千位杀3") PT_EN="qianwei_sha3" ;;
+            "千位杀1") PT_EN="qianwei_sha1" ;;
+            "千位定5") PT_EN="qianwei_ding5" ;;
+            "千位定3") PT_EN="qianwei_ding3" ;;
+            "千位定1") PT_EN="qianwei_ding1" ;;
+            "百位杀3") PT_EN="baiwei_sha3" ;;
+            "百位杀1") PT_EN="baiwei_sha1" ;;
+            "百位定5") PT_EN="baiwei_ding5" ;;
+            "百位定3") PT_EN="baiwei_ding3" ;;
+            "百位定1") PT_EN="baiwei_ding1" ;;
+            "十位杀3") PT_EN="shiwei_sha3" ;;
+            "十位杀1") PT_EN="shiwei_sha1" ;;
+            "十位定5") PT_EN="shiwei_ding5" ;;
+            "十位定3") PT_EN="shiwei_ding3" ;;
+            "十位定1") PT_EN="shiwei_ding1" ;;
+            "个位杀3") PT_EN="gewei_sha3" ;;
+            "个位杀1") PT_EN="gewei_sha1" ;;
+            "个位定5") PT_EN="gewei_ding5" ;;
+            "个位定3") PT_EN="gewei_ding3" ;;
+            "个位定1") PT_EN="gewei_ding1" ;;
+            *) echo "❌ 未匹配到拼音映射" && exit 1 ;;
+          esac
+          
+          echo "📦 下载 Tag: p5_${PT_EN}"
+          
+          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${PT_EN}/lotto_ai3_hitmatrix_p5_${PT_EN}.sql.zip
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
 
       - name: Restore MySQL Database
