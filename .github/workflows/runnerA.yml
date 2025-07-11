@@ -42,7 +42,7 @@ jobs:
           "wanwei_sha3",
           "wanwei_ding1"
         ]
-      max-parallel: 1
+      max-parallel: 6
 
     env:
       MYSQL_HOST: 127.0.0.1

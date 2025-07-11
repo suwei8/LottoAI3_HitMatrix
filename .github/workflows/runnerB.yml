@@ -39,7 +39,7 @@ jobs:
           "gewei_sha1",
           "gewei_ding3"
         ]
-      max-parallel: 1
+      max-parallel: 6
 
     env:
       MYSQL_HOST: 127.0.0.1
@@ -88,8 +88,7 @@ jobs:
 
       - name: Download 公共库
         run: |
-          curl -L -o p5_analysis.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/test/lotto_ai3_v2_p5_mini.zip
-#          curl -L -o p5_analysis.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5/lotto_ai3_v2_p5.sql.zip
+          curl -L -o p5_analysis.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5/lotto_ai3_v2_p5.sql.zip
           unzip -P ${{ secrets.BACKUP_PASSWORD }} p5_analysis.zip -d data/
 
       - name: Download 当前玩法库
