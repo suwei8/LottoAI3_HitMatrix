@@ -5,10 +5,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 from datetime import datetime
 from sqlalchemy import text
-from utils.db import get_engine
+from utils.db import get_engine ,PLAYTYPE_MAPPING
 from utils.logger import log
-from utils.db import PLAYTYPE_MAPPING  # ✅ 引入唯一的映射表
-
 engine = get_engine()
 
 with engine.begin() as conn:
@@ -20,6 +18,7 @@ with engine.begin() as conn:
 
     playtype_en = sys.argv[1] if len(sys.argv) > 1 else "qianwei_ding1"
     playtype_name = PLAYTYPE_MAPPING.get(playtype_en)
+
     if not playtype_name:
         log(f"❌ 未匹配到中文映射: {playtype_en}")
         sys.exit(1)

@@ -16,7 +16,7 @@ def run_command(cmd, capture=False):
     print(f"\n🟢 执行: {cmd}")
     if capture:
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, encoding="utf-8"
+            cmd, shell=True, capture_output=True, text=True, encoding="utf-8", errors="ignore"
         )
     else:
         result = subprocess.run(cmd, shell=True)
@@ -26,7 +26,7 @@ def run_command(cmd, capture=False):
     return result
 
 if __name__ == "__main__":
-    playtype_en = sys.argv[1] if len(sys.argv) > 1 else "qianwei_ding1"
+    playtype_en = (sys.argv[1] if len(sys.argv) > 1 else "qianwei_ding1").strip()
     playtype_cn = PLAYTYPE_MAPPING.get(playtype_en)
 
     if not playtype_cn:
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     while True:
         print("\n📌 === STEP 1: 生成任务 ===")
-        gen_result = run_command(f"python scripts/generate_tasks.py \"{playtype_en}\"", capture=True)
+        gen_result = run_command(f"python scripts/generate_tasks.py {playtype_en}", capture=True)
         gen_output = gen_result.stdout
         print(gen_output)
 
