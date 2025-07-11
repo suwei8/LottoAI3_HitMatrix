@@ -1,5 +1,6 @@
 # scripts/run_all.py
 import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import subprocess
 from time import time, sleep
 from utils.db import PLAYTYPE_MAPPING
@@ -34,7 +35,7 @@ if __name__ == "__main__":
 
     while True:
         print("\n📌 === STEP 1: 生成任务 ===")
-        gen_result = run_command(f"python scripts/generate_tasks.py \"{playtype_cn}\"", capture=True)
+        gen_result = run_command(f"python scripts/generate_tasks.py \"{playtype_en}\"", capture=True)
         gen_output = gen_result.stdout
         print(gen_output)
 
