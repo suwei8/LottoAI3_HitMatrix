@@ -94,7 +94,9 @@ jobs:
         run: |
           echo "📦 下载 Tag: p5_${{ matrix.playtype }}"
           curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/lotto_ai3_hitmatrix_p5_${{ matrix.playtype }}.sql.zip
+          sleep 1
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
+          ls -lh data/
 
       - name: Restore MySQL Database
         run: |
