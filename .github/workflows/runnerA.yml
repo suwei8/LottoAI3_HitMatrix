@@ -102,6 +102,16 @@ jobs:
         run: |
           chmod +x scripts/restore_db.sh
           ./scripts/restore_db.sh
+          sleep 1
+
+      - name: 🗂️ Debug 打印源表 lottery_results_p5
+        run: |
+          echo "=== lottery_results_p5 行数 ==="
+          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SELECT COUNT(*) FROM lottery_results_p5;"
+          
+          echo ""
+          echo "=== lottery_results_p5 前 5 条 ==="
+          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SELECT * FROM lottery_results_p5 LIMIT 5;"
 
       - name: 🗂️ Debug 打印核心表结构 & 行数
         run: |
