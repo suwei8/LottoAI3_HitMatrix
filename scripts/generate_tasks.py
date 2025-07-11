@@ -7,6 +7,7 @@ from datetime import datetime
 from sqlalchemy import text
 from utils.db import get_engine
 from utils.logger import log
+from utils.db import PLAYTYPE_MAPPING  # ✅ 引入唯一的映射表
 
 engine = get_engine()
 
@@ -17,7 +18,12 @@ with engine.begin() as conn:
     log("📌 [STEP1] 生成基础组合")
     POSITION_NAME_MAP = {0: "万位", 1: "千位", 2: "百位", 3: "十位", 4: "个位"}
 
-    playtype_name = sys.argv[1] if len(sys.argv) > 1 else "千位定1"
+    playtype_en = sys.argv[1] if len(sys.argv) > 1 else "qianwei_ding1"
+    playtype_name = PLAYTYPE_MAPPING.get(playtype_en)
+    if not playtype_name:
+        log(f"❌ 未匹配到中文映射: {playtype_en}")
+        sys.exit(1)
+
     position = None
     for k, v in POSITION_NAME_MAP.items():
         if playtype_name.startswith(v):
