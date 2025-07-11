@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Configs
+.env
+*.env
+
+# DB dumps
+*.sql
+*.sql.gz

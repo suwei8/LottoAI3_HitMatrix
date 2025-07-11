@@ -1,0 +1,28 @@
+D:\dev_root\LottoAI3_HitMatrix/
+│ ├── .env
+│ ├── .git/
+│ ├── .github/
+│    ├── workflows/
+│        ├── runnerA.yml
+│        ├── runnerB.yml
+│ ├── .gitignore
+│ ├── .idea/
+│ ├── .venv/
+│ ├── Project Structure.txt
+│ ├── Project_Structure.py
+│ ├── config/
+│    ├── p5_base.yaml
+│ ├── requirements.txt
+│ ├── scripts/
+│    ├── __pycache__/
+│    ├── analyze_p5_db.py
+│    ├── backtest.py
+│    ├── generate_tasks.py
+│    ├── restore_db.sh
+│    ├── run_all.py
+│ ├── utils/
+│    ├── __pycache__/
+│    ├── db.py
+│    ├── expert_hit_analysis.py
+│    ├── hit_rule.py
+│    ├── logger.py

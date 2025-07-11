@@ -1,0 +1,53 @@
+#  config/p5_base.yaml
+# === 通用默认配置 ===
+CHECK_MODE: dingwei
+LOTTERY_NAME: 排列5
+ANALYSIS_MODE: rank
+
+# === 生成任务固定配置 ===
+dingwei_sha_poss: 0
+enables: dingwei_sha
+skip_if_fews: dingwei_sha
+resolve_tie_modes: dingwei_sha
+reverse_on_ties: dingwei_sha
+lookback_offsets: 0
+
+# === 全期命中验证模式 ===
+ENABLE_HIT_CHECK: True
+ENABLE_TRACK_OPEN_RANK: True
+LOG_SAVE_MODE: False
+QUERY_ISSUES: All
+ALL_MODE_LIMIT: None
+
+# === 策略启用开关，默认都 False ===
+ENABLE_SHA1: False
+ENABLE_SHA2: False
+ENABLE_DAN1: False
+ENABLE_DAN2: False
+ENABLE_DINGWEI_SHA2: False
+ENABLE_DINGWEI_SHA3: False
+ENABLE_DINGWEI_DAN1: False
+
+# === 通用跳过条件 ===
+SKIP_IF_FEW_SHA1: False
+SKIP_IF_FEW_SHA2: False
+SKIP_IF_FEW_DAN1: False
+SKIP_IF_FEW_DAN2: False
+SKIP_IF_FEW_DINGWEI_SHA: False
+SKIP_IF_FEW_DINGWEI_SHA2: False
+SKIP_IF_FEW_DINGWEI_SHA3: False
+
+# === 通用并列处理 ===
+RESOLVE_TIE_MODE_SHA1: False
+RESOLVE_TIE_MODE_SHA2: False
+RESOLVE_TIE_MODE_DAN1: False
+RESOLVE_TIE_MODE_DAN2: False
+RESOLVE_TIE_MODE_DINGWEI_SHA2: False
+RESOLVE_TIE_MODE_DINGWEI_SHA3: False
+RESOLVE_TIE_MODE_DINGWEI_DAN1: False
+
+# === 通用反向处理 ===
+REVERSE_ON_TIE_DINGWEI_SHA2: False
+REVERSE_ON_TIE_DINGWEI_SHA3: False
+REVERSE_ON_TIE_DINGWEI_DAN1: False
+
