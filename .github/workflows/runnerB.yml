@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_runnerA
+name: LottoAI3_HitMatrix_runnerB
 
 on:
   workflow_dispatch:
@@ -28,19 +28,16 @@ jobs:
     strategy:
       matrix:
         playtype: [
-          "gewei_sha3",
-          "gewei_ding1",
-          "gewei_ding5",
-          "shiwei_sha3",
-          "shiwei_ding1",
-          "shiwei_ding5",
-          "baiwei_sha3",
-          "baiwei_ding1",
-          "baiwei_ding5",
-          "qianwei_sha3",
-          "qianwei_ding1",
-          "wanwei_sha3",
-          "wanwei_ding1"
+          "wanwei_sha1",
+          "wanwei_ding3",
+          "qianwei_sha1",
+          "qianwei_ding3",
+          "baiwei_sha1",
+          "baiwei_ding3",
+          "shiwei_sha1",
+          "shiwei_ding3",
+          "gewei_sha1",
+          "gewei_ding3"
         ]
       max-parallel: 1
 
@@ -91,7 +88,8 @@ jobs:
 
       - name: Download 公共库
         run: |
-          curl -L -o p5_analysis.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5/lotto_ai3_v2_p5.sql.zip
+          curl -L -o p5_analysis.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/test/lotto_ai3_v2_p5_mini.zip
+#          curl -L -o p5_analysis.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5/lotto_ai3_v2_p5.sql.zip
           unzip -P ${{ secrets.BACKUP_PASSWORD }} p5_analysis.zip -d data/
 
       - name: Download 当前玩法库
