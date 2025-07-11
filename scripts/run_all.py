@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding="utf-8")
 import subprocess
 from time import sleep, time
-
+from utils.report_tools import generate_wechat_message
 from utils.upload_tools import do_final_dump_and_upload  # 👈 必须有
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)  # 切换到项目根

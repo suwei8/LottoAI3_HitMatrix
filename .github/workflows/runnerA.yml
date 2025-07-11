@@ -61,6 +61,10 @@ jobs:
           echo "Asia/Shanghai: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
           echo "====================="
 
+      - name: Set Start Time
+        run: |
+          echo "start_time=$(date +%s)" >> $GITHUB_ENV
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -141,3 +145,25 @@ jobs:
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
           python scripts/run_all.py "${{ matrix.playtype }}"
+
+      - name: Calculate Duration
+        id: calc_duration
+        run: |
+          END=$(date +%s)
+          duration=$((END - $start_time))
+          echo "start_time=$start_time"
+          echo "END=$END"
+          echo "duration=$duration"
+          echo "mins=$((duration / 60))" >> $GITHUB_OUTPUT
+          echo "secs=$((duration % 60))" >> $GITHUB_OUTPUT
+
+
+      - name: Send WeChat Notify
+        env:
+          WECHAT_API_URL: ${{ secrets.WECHAT_API_URL }}
+          WECHAT_API_KEY: ${{ secrets.WECHAT_API_KEY }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          DURATION_MINUTES: ${{ steps.calc_duration.outputs.mins }}
+          DURATION_SECONDS: ${{ steps.calc_duration.outputs.secs }}
+        run: |
+          python scripts/send_notify.py "${{ matrix.playtype }}"
