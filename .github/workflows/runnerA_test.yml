@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_runnerA_TEST
+name: LottoAI3_HitMatrix_runnerA
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
 jobs:
   run_group_A:
     runs-on: ubuntu-latest
-    timeout-minutes: 330   # ➜ 5.5 小时，自动收工
+    timeout-minutes: 15   # ➜ 5.5 小时，自动收工
 
     services:
       mysql:
@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         playtype: [
-          "wanwei_ding1"
+          "gewei_sha3",
         ]
       max-parallel: 1
 

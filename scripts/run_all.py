@@ -9,7 +9,8 @@ from utils.upload_tools import do_final_dump_and_upload  # 👈 必须有
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)  # 切换到项目根
 
-MAX_DURATION = 5.5 * 60 * 60  # 单位：秒
+MAX_DURATION = 10 * 60             # 🧪 测试：最多运行10分钟
+CHECKPOINT_BUFFER = 2 * 60         # 🧪 提前2分钟做收尾
 start_time = time()
 
 def run_command(cmd, capture=False):
@@ -41,10 +42,20 @@ def run_command(cmd, capture=False):
         sys.exit(result.returncode)
     return result
 
+
 if __name__ == "__main__":
     playtype = sys.argv[1] if len(sys.argv) > 1 else "千位定1"
 
     while True:
+        now = time()
+        elapsed = now - start_time
+        remaining = MAX_DURATION - elapsed
+
+        if remaining <= CHECKPOINT_BUFFER:
+            print(f"\n🕔 剩余 {int(remaining)} 秒 < 安全缓冲时间({CHECKPOINT_BUFFER}秒) ➜ 提前触发收尾上传")
+            do_final_dump_and_upload(playtype)
+            break
+
         print("\n📌 === STEP 1: 生成任务 ===")
         gen_result = run_command([sys.executable, "scripts/generate_tasks.py", playtype], capture=True)
         gen_output = gen_result.stdout
@@ -59,19 +70,10 @@ if __name__ == "__main__":
 
         no_pending_task = "待执行任务: 0" in backtest_output
 
-        elapsed = time() - start_time
-
-        # ✅ 只要到点 ➜ 做收尾
-        if elapsed > MAX_DURATION:
-            print(f"\n⏰ 已达最大执行时长 {MAX_DURATION/60:.1f} 分钟 ➜ 强制收工")
-            do_final_dump_and_upload(playtype)
-            break
-
-        # ✅ 如果没有新任务 + 没有待执行任务 ➜ 也收尾
         if no_new_task and no_pending_task:
             print("\n✅ 没有新任务且没有可执行任务 ➜ 做收尾并退出")
             do_final_dump_and_upload(playtype)
             break
 
-        print("\n⏳ 还有任务或有新组合 ➜ 等待下一轮...")
+        print(f"\n⏳ 等待下一轮 ➜ 剩余约 {int(remaining)} 秒")
         sleep(1)
