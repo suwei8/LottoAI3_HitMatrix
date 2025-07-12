@@ -114,7 +114,7 @@ def analyze_best_tasks_for_issue(issue: str, lottery: str = "排列5"):
     return results
 
 if __name__ == "__main__":
-    issue = sys.argv[1] if len(sys.argv) > 1 else "2025181"
+    issue = sys.argv[1] if len(sys.argv) > 1 else "2025178"
     results = analyze_best_tasks_for_issue(issue)
     for r in results:
         print(f"🎯 ID={r['id']} ➜ 分位={r['position']} ➜ 玩法={r['playtype']} ➜ 命中率：{r['hit_rate']:.2f} ➜ 推荐结果：{r['recommend']}")
