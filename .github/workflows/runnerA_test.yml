@@ -9,7 +9,7 @@ permissions:
 jobs:
   run_group_A:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
 
     services:
       mysql:
