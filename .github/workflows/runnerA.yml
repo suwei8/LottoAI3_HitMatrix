@@ -9,7 +9,6 @@ permissions:
 jobs:
   run_group_A:
     runs-on: ubuntu-latest
-    timeout-minutes: 15   # ➜ 5.5 小时，自动收工
 
     services:
       mysql:
@@ -28,6 +27,13 @@ jobs:
     strategy:
       matrix:
         playtype: [
+          "baiwei_sha3",
+          "baiwei_ding1",
+          "baiwei_ding5",
+          "qianwei_sha3",
+          "qianwei_ding1",
+          "wanwei_sha3",
+          "wanwei_ding1",
           "gewei_sha3",
           "gewei_ding1",
           "gewei_ding5",
