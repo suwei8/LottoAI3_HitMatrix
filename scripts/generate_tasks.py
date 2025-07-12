@@ -34,13 +34,21 @@ with engine.begin() as conn:
 
     log(f"🎯 当前玩法: {playtype_name} ➜ 分位索引: {position}")
 
-    rows = conn.execute(text("SELECT DISTINCT issue_name FROM lottery_results_p5 ORDER BY issue_name DESC")).fetchall()
+    rows = conn.execute(text("""
+        SELECT DISTINCT issue_name
+        FROM expert_predictions_p5
+        WHERE playtype_name = :playtype_name
+        ORDER BY issue_name DESC
+    """), {"playtype_name": playtype_name}).fetchall()
+
     issues = [row[0] for row in rows]
-    newest = issues[0]
-    oldest = issues[-1]
-    max_lookback = int(newest) - int(oldest)
-    lookback_ns = list(range(max_lookback, 0, -1))
-    log(f"🎯 lookback_ns: {lookback_ns}")
+
+    if not issues:
+        log(f"❌ expert_predictions_p5 中无可用预测记录 ➜ {playtype_name}")
+        sys.exit(1)
+
+    lookback_ns = list(range(len(issues), 0, -1))  # ✅ 全部回溯
+    log(f"🎯 当前玩法: {playtype_name} ➜ 可用预测期数={len(issues)} ➜ lookback_ns: {lookback_ns}")
 
     query_playtype_name = playtype_name
     analyze_playtype_name = playtype_name
