@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_runnerA-TEST
+name: LottoAI3_HitMatrix_runnerA_TEST
 
 on:
   workflow_dispatch:
@@ -28,18 +28,6 @@ jobs:
     strategy:
       matrix:
         playtype: [
-          "gewei_sha3",
-          "gewei_ding1",
-          "gewei_ding5",
-          "shiwei_sha3",
-          "shiwei_ding1",
-          "shiwei_ding5",
-          "baiwei_sha3",
-          "baiwei_ding1",
-          "baiwei_ding5",
-          "qianwei_sha3",
-          "qianwei_ding1",
-          "wanwei_sha3",
           "wanwei_ding1"
         ]
       max-parallel: 1
