@@ -9,7 +9,7 @@ permissions:
 jobs:
   run_group_A:
     runs-on: ubuntu-latest
-    timeout-minutes: 15   # ➜ 5.5 小时，自动收工
+    timeout-minutes: 15
 
     services:
       mysql:
@@ -30,7 +30,7 @@ jobs:
         playtype: [
           "gewei_sha3",
         ]
-      max-parallel: 1
+      max-parallel: 6
 
     env:
       MYSQL_HOST: 127.0.0.1
