@@ -143,9 +143,8 @@ def analyze_expert_hits(
     if query_issue is None:
         query_issue = all_issues[0] if all_issues else None
     prior_issues = [i for i in all_issues if i < query_issue]
-    print(all_issues)
-    print(query_issue)
-
+    # print(all_issues)
+    # print(query_issue)
     issue_list = prior_issues[lookback_start_offset: lookback_start_offset + lookback_n] if lookback_n else prior_issues[lookback_start_offset:]
 
     # ✅ 如果指定了 user_id，直接使用，跳过后面所有筛选
@@ -772,7 +771,7 @@ def run_hit_analysis_batch(
     miss_count = 0            # 未命中次数
     skip_count = 0            # ✅ 新增：跳过本期（推荐不足或回溯为空）
     open_rank_counter = Counter()  # ✅ 累计开奖号码在推荐频次中出现的排名
-    print(f"🟢 lookback_n (batch) = {analysis_kwargs.get('lookback_n')}")
+    # print(f"🟢 lookback_n (batch) = {analysis_kwargs.get('lookback_n')}")
     # ✅ 支持 query_issues = ['All']，自动提取所有期号
     if query_issues == ["All"]:
         prediction_table = get_prediction_table(lottery_name)
@@ -892,7 +891,7 @@ def run_hit_analysis_batch(
 
         for rank in sorted(open_rank_counter):
             print(f"   - 排名第 {rank} 位：{open_rank_counter[rank]} 次")
-
+            print("=" * 30)
 
     if log_callback:
         log_callback()
