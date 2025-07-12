@@ -1,16 +1,13 @@
 # scripts/run_all.py
 import os, sys
 import subprocess
-from time import sleep, time
+from time import sleep
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding="utf-8")
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)  # 切换到项目根目录
-
-MAX_DURATION = 5 * 60  # 🧪 测试用：最多运行 5 分钟
-start_time = time()
 
 def run_command(cmd, capture=False):
     print(f"\n🟢 执行: {cmd}")
@@ -40,8 +37,17 @@ def run_command(cmd, capture=False):
         sys.exit(result.returncode)
     return result
 
+
 if __name__ == "__main__":
     playtype = sys.argv[1] if len(sys.argv) > 1 else "gewei_sha3"
+
+    # ✅ 启动上传子进程（内部延时5分钟后执行上传）
+    print(f"\n🚀 后台启动延迟上传脚本（5分钟后执行）➜ {playtype}")
+    subprocess.Popen(
+        [sys.executable, "scripts/upload_release.py", playtype],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
 
     while True:
         print("\n📌 === STEP 1: 生成任务 ===")
@@ -58,26 +64,8 @@ if __name__ == "__main__":
 
         no_pending_task = "待执行任务: 0" in backtest_output
 
-        elapsed = time() - start_time
-
-        # ✅ 到达时限 ➜ 启动 upload_release.py 作为后台子进程
-        if elapsed > MAX_DURATION:
-            print(f"\n⏰ 已达最大执行时长 {MAX_DURATION / 60:.1f} 分钟 ➜ 启动延迟上传任务")
-            subprocess.Popen(
-                [sys.executable, "scripts/upload_release.py", playtype],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            break
-
-        # ✅ 没有新任务 且 没有待执行任务 ➜ 也启动上传
         if no_new_task and no_pending_task:
-            print("\n✅ 没有新任务且没有可执行任务 ➜ 启动上传任务并退出")
-            subprocess.Popen(
-                [sys.executable, "scripts/upload_release.py", playtype],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+            print("\n✅ 没有新任务且没有可执行任务 ➜ 主流程收工退出")
             break
 
         print("\n⏳ 还有任务或有新组合 ➜ 等待下一轮...")

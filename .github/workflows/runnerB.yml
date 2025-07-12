@@ -99,9 +99,9 @@ jobs:
           curl -L -o data/lotto_p5_backup.zip \
             https://github.com/suwei8/lotto_ai3_v2-Backup_data/releases/download/backup-p5/lotto_p5_backup.zip
 
-          echo "🔓 解压 ZIP（密码：sw@63828）"
+          echo "🔓 解压 ZIP"
           sudo apt-get update && sudo apt-get install -y unzip pv
-          unzip -P "sw@63828" -d data/ data/lotto_p5_backup.zip
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_p5_backup.zip
 
           echo "🚀 恢复数据库（显示导入进度）"
           gunzip -c data/lotto_p5.sql.gz | \
