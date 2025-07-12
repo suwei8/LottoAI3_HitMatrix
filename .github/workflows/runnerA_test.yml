@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_runnerA_test
+name: LottoAI3_HitMatrix_runnerA-TEST
 
 on:
   workflow_dispatch:
@@ -89,58 +89,63 @@ jobs:
             sleep 5
           done
 
-      - name: Download 公共库
+      - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
         run: |
-          curl -L -o p5_analysis.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/test/lotto_ai3_v2_p5_mini.zip
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} p5_analysis.zip -d data/
+          echo "=============================="
+          echo "🎯 开始执行 Download P5分析表 工作流"
+          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
+          START_TIME=$(date +%s)
 
-      - name: Download 当前玩法库
+          echo "📁 创建目录 & 下载 ZIP"
+          mkdir -p data
+          curl -L -o data/lotto_p5_backup.zip \
+            https://github.com/suwei8/lotto_ai3_v2-Backup_data/releases/download/backup-p5/lotto_p5_backup.zip
+
+          echo "🔓 解压 ZIP（密码：sw@63828）"
+          sudo apt-get update && sudo apt-get install -y unzip pv
+          unzip -P "sw@63828" -d data/ data/lotto_p5_backup.zip
+
+          echo "🚀 恢复数据库（显示导入进度）"
+          gunzip -c data/lotto_p5.sql.gz | \
+            pv -s $(gzip -l data/lotto_p5.sql.gz | awk 'NR==2 {print $2}') | \
+            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+
+          echo "🧹 清理中间文件"
+          rm -rf data/*
+
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "=============================="
+          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
+          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
+
+      - name: 📥 下载并还原回测任务表（含解压 + 导入数据库）
         run: |
-          echo "📦 下载 Tag: p5_${{ matrix.playtype }}"
+          echo "=============================="
+          echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
           curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/lotto_ai3_hitmatrix_p5_${{ matrix.playtype }}.sql.zip
-          sleep 1
+          
+          echo "🔓 解压任务表（使用密码）"
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
+          
+          echo "📁 解压结果如下："
           ls -lh data/
+          
+          # 自动寻找解压后的 .sql 文件
+          SQL_FILE=$(find data/ -name "*.sql" | head -n 1)
+          if [ -z "$SQL_FILE" ]; then
+            echo "❌ 未找到解压后的 .sql 文件"
+            exit 1
+          fi
+          
+          echo "📥 开始导入 SQL 文件: $SQL_FILE"
+          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
+          
+          echo "✅ 数据导入完成"
+          echo "=============================="
 
-      - name: Restore MySQL Database
-        run: |
-          chmod +x scripts/restore_db.sh
-          ./scripts/restore_db.sh
-          sleep 1
-
-      - name: 🗂️ Debug 打印源表 lottery_results_p5
-        run: |
-          echo "=== lottery_results_p5 行数 ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SELECT COUNT(*) FROM lottery_results_p5;"
-          
-          echo ""
-          echo "=== lottery_results_p5 前 5 条 ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SELECT * FROM lottery_results_p5 LIMIT 5;"
-
-      - name: 🗂️ Debug 打印核心表结构 & 行数
-        run: |
-          echo "=== 当前数据库所有表 ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SHOW TABLES;"
-          
-          echo ""
-          echo "=== 表结构: tasks ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "DESCRIBE tasks;"
-          
-          echo ""
-          echo "=== 表结构: best_tasks ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "DESCRIBE best_tasks;"
-          
-          echo ""
-          echo "=== tasks 行数 ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SELECT COUNT(*) AS total FROM tasks;"
-          
-          echo ""
-          echo "=== best_tasks 行数 ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SELECT COUNT(*) AS total FROM best_tasks;"
-          
-          echo ""
-          echo "=== tasks 前 5 条 ==="
-          mysql -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} -e "SELECT * FROM tasks LIMIT 5;"
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |

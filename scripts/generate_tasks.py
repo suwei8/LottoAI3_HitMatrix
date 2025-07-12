@@ -39,7 +39,7 @@ with engine.begin() as conn:
     newest = issues[0]
     oldest = issues[-1]
     max_lookback = int(newest) - int(oldest)
-    lookback_ns = list(range(min(max_lookback, 4), 0, -1))
+    lookback_ns = list(range(max_lookback, 0, -1))
     log(f"🎯 lookback_ns: {lookback_ns}")
 
     query_playtype_name = playtype_name
