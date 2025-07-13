@@ -1,3 +1,4 @@
+# utils/upload_tools.py
 import os
 import sys
 import subprocess
@@ -7,6 +8,11 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import text
 from utils.db import get_engine  # ✅ 使用统一数据库封装
 import tempfile
+
+# ✅ 仅本地加载 .env，CI 不污染
+from dotenv import load_dotenv
+if os.getenv("GITHUB_ACTIONS") != "true":
+    load_dotenv(override=False)
 
 
 def run_command(cmd, capture=False, use_shell=False):
@@ -42,21 +48,48 @@ def run_command(cmd, capture=False, use_shell=False):
 
 
 def do_final_dump_and_upload(playtype_en):
-    BACKUP_PASSWORD = os.getenv("BACKUP_PASSWORD")
+    # ✅ 显式读取并验证环境变量
+    db_host = os.getenv("MYSQL_HOST", "127.0.0.1")
+    db_user = os.getenv("MYSQL_USER", "root")
+    db_password = os.getenv("MYSQL_PASSWORD")
+    db_name = os.getenv("MYSQL_DATABASE")
+    backup_password = os.getenv("BACKUP_PASSWORD")
+
+    # ✅ 显示调试信息
+    print("📌 环境变量检查:")
+    print(f"  MYSQL_HOST = {db_host}")
+    print(f"  MYSQL_USER = {db_user}")
+    print(f"  MYSQL_PASSWORD = {'已设置' if db_password else '[未设置]'}")
+    print(f"  MYSQL_DATABASE = {db_name if db_name else '[未设置]'}")
+    print(f"  BACKUP_PASSWORD = {'已设置' if backup_password else '[未设置]'}")
+
+    # ✅ 参数校验
+    missing = []
+    for k in ["MYSQL_HOST", "MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_DATABASE", "BACKUP_PASSWORD"]:
+        if not os.getenv(k):
+            missing.append(k)
+
+    if missing:
+        print(f"❌ 缺少以下环境变量：{', '.join(missing)}")
+        print("🔍 请确认这些变量是否正确设置在 GitHub Actions 的 secrets 中")
+        sys.exit(1)
+
+
     zip_name = f"lotto_ai3_hitmatrix_p5_{playtype_en}.sql.zip"
 
-    # ✅ 1. 直接使用 mysqldump 命令行备份（保持兼容）
+    # ✅ 1. 生成 mysqldump 命令
     dump_cmd = (
-        f"mysqldump -h 127.0.0.1 -uroot -p\"{os.getenv('MYSQL_PASSWORD')}\" "
-        f"{os.getenv('MYSQL_DATABASE')} tasks best_tasks best_ranks > tasks_best.sql"
+        f'mysqldump -h {db_host} -u{db_user} -p"{db_password}" '
+        f'{db_name} tasks best_tasks best_ranks > tasks_best.sql'
     )
     run_command(dump_cmd, use_shell=True)
+
     import time
     print("✅ mysqldump 执行完成，准备压缩...")
     time.sleep(0.5)
     # ✅ 2. zip 压缩备份（跨平台方式）
     try:
-        pyminizip.compress("tasks_best.sql", None, zip_name, BACKUP_PASSWORD, 5)
+        pyminizip.compress("tasks_best.sql", None, zip_name, backup_password, 5)
         print(f"✅ 使用 pyminizip 压缩成功 ➜ {zip_name}")
     except Exception as e:
         print(f"❌ 压缩失败: {e}")

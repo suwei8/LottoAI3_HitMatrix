@@ -1,13 +1,17 @@
 # utils/db.py
+# 整个项目的统一数据库连接、动态获取表名工具函数
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-load_dotenv()
+# ✅ 仅在本地调试加载 .env，不影响 GitHub Actions 的环境变量注入
+if os.getenv("GITHUB_ACTIONS") != "true":
+    load_dotenv(override=False)
+
 
 DB_CONFIG = {
     'host': os.getenv("MYSQL_HOST"),
-    'port': int(os.getenv("MYSQL_PORT")),
+    'port': int(os.getenv("MYSQL_PORT", 3306)),  # ✅ 加默认值
     'user': os.getenv("MYSQL_USER"),
     'password': os.getenv("MYSQL_PASSWORD"),
     'database': os.getenv("MYSQL_DATABASE"),
@@ -66,4 +70,4 @@ def get_result_table(lottery_name: str) -> str:
         "双色球": "lottery_results_ssq",
         "大乐透": "lottery_results_dlt",
     }
-    return mapping.get(lottery_name, "lottery_results_3d")
+    return mapping.get(lottery_name, "lottery_results_p5")
