@@ -61,9 +61,10 @@ def do_final_dump_and_upload(playtype_en):
     tag = f"p5_{playtype_en}"
     zip_name = f"lotto_ai3_hitmatrix_p5_{playtype_en}.sql.zip"
 
-    # ✅ 第一步：导出数据表
+    # ✅ 第一步：导出数据表（不加任何跳过生成列的参数，直接导出所有数据）
     dump_cmd = (
-        f"mysqldump -h {MYSQL_HOST} -u{MYSQL_USER} -p\"{MYSQL_PASSWORD}\" "
+        f"mysqldump --skip-triggers "
+        f"-h {MYSQL_HOST} -u{MYSQL_USER} -p\"{MYSQL_PASSWORD}\" "
         f"{MYSQL_DATABASE} tasks best_tasks best_ranks > tasks_best.sql"
     )
     run_command(dump_cmd, use_shell=True)
