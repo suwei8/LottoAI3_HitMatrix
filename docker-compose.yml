@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-container
+
+    # ✅ 挂载整个本地项目目录，实时同步修改
+    volumes:
+      - .:/app
+
+    # ✅ 引入 .env 中的变量（确保本地 .env 文件内容正确）
+    env_file:
+      - .env
+
+    environment:
+      MYSQL_HOST: mysql             # Docker 内服务通信用服务名
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      GH_TOKEN: ${GH_TOKEN}         # ✅ 传递 GH_TOKEN 到容器
+      GH_USER: ${GH_USER:-suwei8}   # 可自定义 GitHub 用户名
+
+      http_proxy: "http://192.168.1.8:10809"
+      https_proxy: "http://192.168.1.8:10809"
+      no_proxy: "localhost,127.0.0.1,*.local"
+
+    depends_on:
+      - mysql
+
+    networks:
+      - backend
+
+    ports:
+      - "5000:5000"
+
+    # ✅ 保持容器运行，开发调试时容器不会退出
+    command: tail -f /dev/null
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

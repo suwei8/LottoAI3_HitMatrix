@@ -1,15 +1,23 @@
 # scripts/backtest.py
 import os, sys
+import subprocess
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding='utf-8')
+
+# ✅ 提前解析传参
+playtype_en = sys.argv[1] if len(sys.argv) > 1 else "unknown"
+
 from datetime import datetime
 import json
-import subprocess
 from sqlalchemy import text
 from utils.db import get_engine
 from utils.logger import log, save_log_file_if_needed
 from utils.expert_hit_analysis import run_hit_analysis_batch
+from utils.upload_tools import do_final_dump_and_upload  # ✅ 正确顺序
 
+
+playtype_en = sys.argv[1] if len(sys.argv) > 1 else "unknown"
 engine = get_engine()
 
 with engine.begin() as conn:
@@ -136,15 +144,11 @@ with engine.begin() as conn:
 
         log(f"📌 已写 best_ranks：未命中位={zero_ranks}")
         # ✅ 每执行一个任务就调用一次 upload_release.py 脚本（带当前玩法名）
-        log(f"🚀 执行上传 Release ➜ {query_playtype_name}")
+        log(f"🚀 执行上传 Release ➜ {playtype_en}")
         try:
-            upload_result = subprocess.run(
-                [sys.executable, "scripts/upload_release.py", query_playtype_name],
-                capture_output=True,
-                text=True
-            )
-            log(f"📤 上传输出:\n{upload_result.stdout}")
-            log(f"✅ 上传状态码: {upload_result.returncode}")
+            # 直接调用上传函数
+            do_final_dump_and_upload(playtype_en)
+            log("✅ 上传任务执行成功")
         except Exception as e:
             log(f"❌ 上传失败: {e}")
 
