@@ -12,7 +12,7 @@ jobs:
 
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.0.36
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
@@ -39,7 +39,6 @@ jobs:
           "gewei_ding3"
         ]
       max-parallel: 6
-
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -48,7 +47,7 @@ jobs:
       MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
       BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
       GH_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
-
+      GITHUB_RUN_NUMBER: ${{ github.run_number }}
     steps:
       - name: 🕒 Debug Timezone Info
         run: |
@@ -56,10 +55,6 @@ jobs:
           echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
           echo "Asia/Shanghai: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
           echo "====================="
-
-      - name: Set Start Time
-        run: |
-          echo "start_time=$(date +%s)" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,17 +68,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Wait for MySQL
-        run: |
-          for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p${{ secrets.MYSQL_PASSWORD }} --silent; then
-              echo "✅ MySQL is ready."
-              break
-            fi
-            echo "⏳ Waiting for MySQL ($i)..."
-            sleep 5
-          done
 
       - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
         run: |
@@ -146,25 +130,3 @@ jobs:
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
           python scripts/run_all.py "${{ matrix.playtype }}"
-
-      - name: Calculate Duration
-        id: calc_duration
-        run: |
-          END=$(date +%s)
-          duration=$((END - $start_time))
-          echo "start_time=$start_time"
-          echo "END=$END"
-          echo "duration=$duration"
-          echo "mins=$((duration / 60))" >> $GITHUB_OUTPUT
-          echo "secs=$((duration % 60))" >> $GITHUB_OUTPUT
-
-
-      - name: Send WeChat Notify
-        env:
-          WECHAT_API_URL: ${{ secrets.WECHAT_API_URL }}
-          WECHAT_API_KEY: ${{ secrets.WECHAT_API_KEY }}
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          DURATION_MINUTES: ${{ steps.calc_duration.outputs.mins }}
-          DURATION_SECONDS: ${{ steps.calc_duration.outputs.secs }}
-        run: |
-          python scripts/send_notify.py "${{ matrix.playtype }}"
