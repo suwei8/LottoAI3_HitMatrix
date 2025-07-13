@@ -136,4 +136,4 @@ jobs:
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
-          scripts/upload_release.py "${{ matrix.playtype }}"
+          python scripts/upload_release.py "${{ matrix.playtype }}"
