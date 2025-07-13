@@ -27,9 +27,9 @@ jobs:
     strategy:
       matrix:
         playtype: [
-          "gewei_sha3",
+          "baiwei_sha3",
         ]
-      max-parallel: 6
+      max-parallel: 1
 
     env:
       MYSQL_HOST: 127.0.0.1

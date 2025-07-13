@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding='utf-8')
 from datetime import datetime
 import json
+import subprocess
 from sqlalchemy import text
 from utils.db import get_engine
 from utils.logger import log, save_log_file_if_needed
@@ -134,6 +135,18 @@ with engine.begin() as conn:
         ))
 
         log(f"📌 已写 best_ranks：未命中位={zero_ranks}")
+        # ✅ 每执行一个任务就调用一次 upload_release.py 脚本（带当前玩法名）
+        log(f"🚀 执行上传 Release ➜ {query_playtype_name}")
+        try:
+            upload_result = subprocess.run(
+                [sys.executable, "scripts/upload_release.py", query_playtype_name],
+                capture_output=True,
+                text=True
+            )
+            log(f"📤 上传输出:\n{upload_result.stdout}")
+            log(f"✅ 上传状态码: {upload_result.returncode}")
+        except Exception as e:
+            log(f"❌ 上传失败: {e}")
 
     # ✅ 任务执行后再打印一次
     remaining = conn.execute(text("SELECT COUNT(*) FROM tasks WHERE status = 'pending'")).scalar()

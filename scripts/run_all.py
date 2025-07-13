@@ -41,14 +41,6 @@ def run_command(cmd, capture=False):
 if __name__ == "__main__":
     playtype = sys.argv[1] if len(sys.argv) > 1 else "gewei_sha3"
 
-    # ✅ 启动上传子进程（内部延时5.5小时后执行上传）
-    print(f"\n🚀 后台启动延迟上传脚本（5.5小时后执行）➜ {playtype}")
-    subprocess.Popen(
-        [sys.executable, "scripts/upload_release.py", playtype],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
-
     while True:
         print("\n📌 === STEP 1: 生成任务 ===")
         gen_result = run_command([sys.executable, "scripts/generate_tasks.py", playtype], capture=True)
