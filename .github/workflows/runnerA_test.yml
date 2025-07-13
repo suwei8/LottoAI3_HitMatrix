@@ -76,37 +76,37 @@ jobs:
             sleep 5
           done
 
-      - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
-        run: |
-          echo "=============================="
-          echo "🎯 开始执行 Download P5分析表 工作流"
-          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "=============================="
-          START_TIME=$(date +%s)
-
-          echo "📁 创建目录 & 下载 ZIP"
-          mkdir -p data
-          curl -L -o data/lotto_p5_backup.zip \
-            https://github.com/suwei8/lotto_ai3_v2-Backup_data/releases/download/backup-p5/lotto_p5_backup.zip
-
-          echo "🔓 解压 ZIP"
-          sudo apt-get update && sudo apt-get install -y unzip pv
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_p5_backup.zip
-
-          echo "🚀 恢复数据库（显示导入进度）"
-          gunzip -c data/lotto_p5.sql.gz | \
-            pv -s $(gzip -l data/lotto_p5.sql.gz | awk 'NR==2 {print $2}') | \
-            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
-
-          echo "🧹 清理中间文件"
-          rm -rf data/*
-
-          END_TIME=$(date +%s)
-          DURATION=$((END_TIME - START_TIME))
-          echo "=============================="
-          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
-          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "=============================="
+#      - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
+#        run: |
+#          echo "=============================="
+#          echo "🎯 开始执行 Download P5分析表 工作流"
+#          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+#          echo "=============================="
+#          START_TIME=$(date +%s)
+#
+#          echo "📁 创建目录 & 下载 ZIP"
+#          mkdir -p data
+#          curl -L -o data/lotto_p5_backup.zip \
+#            https://github.com/suwei8/lotto_ai3_v2-Backup_data/releases/download/backup-p5/lotto_p5_backup.zip
+#
+#          echo "🔓 解压 ZIP"
+#          sudo apt-get update && sudo apt-get install -y unzip pv
+#          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_p5_backup.zip
+#
+#          echo "🚀 恢复数据库（显示导入进度）"
+#          gunzip -c data/lotto_p5.sql.gz | \
+#            pv -s $(gzip -l data/lotto_p5.sql.gz | awk 'NR==2 {print $2}') | \
+#            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+#
+#          echo "🧹 清理中间文件"
+#          rm -rf data/*
+#
+#          END_TIME=$(date +%s)
+#          DURATION=$((END_TIME - START_TIME))
+#          echo "=============================="
+#          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
+#          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+#          echo "=============================="
 
       - name: 📥 下载并还原回测任务表（含解压 + 导入数据库）
         run: |
@@ -136,4 +136,4 @@ jobs:
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
-          python scripts/run_all.py "${{ matrix.playtype }}"
+          scripts/upload_release.py "${{ matrix.playtype }}"
