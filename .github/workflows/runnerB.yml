@@ -2,6 +2,8 @@ name: LottoAI3_HitMatrix_runnerB
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 */8 * * *'  # 每 8 小时自动执行
 
 permissions:
   contents: write
@@ -27,18 +29,21 @@ jobs:
     strategy:
       matrix:
         playtype: [
-          "wanwei_sha1",
-          "wanwei_ding3",
-          "qianwei_sha1",
-          "qianwei_ding3",
+          "baiwei_sha3",
           "baiwei_sha1",
-          "baiwei_ding3",
-          "shiwei_sha1",
+          "baiwei_ding5",
+          "gewei_ding3",
+          "gewei_ding1",
+          "qianwei_sha3",
+          "qianwei_sha1",
+          "qianwei_ding5",
           "shiwei_ding3",
-          "gewei_sha1",
-          "gewei_ding3"
+          "shiwei_ding1"
+          "wanwei_ding5",
+          "wanwei_ding3",
+          "wanwei_ding1"
         ]
-      max-parallel: 6
+      max-parallel: 11
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
