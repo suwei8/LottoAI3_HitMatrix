@@ -2,6 +2,8 @@ name: LottoAI3_HitMatrix_runnerA
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 */8 * * *'  # 每 8 小时自动执行
 
 permissions:
   contents: write
@@ -36,7 +38,7 @@ jobs:
           "shiwei_sha1",
           "shiwei_ding5",
           "qianwei_ding3",
-          "qianwei_ding1"
+          "qianwei_ding1",
           "wanwei_sha3",
           "wanwei_sha1",
         ]
