@@ -1,12 +1,13 @@
-name: LottoAI3_HitMatrix_runnerA
+name: LottoAI3_HitMatrix_AnalyzeBest
 
 on:
   workflow_dispatch:
+
 permissions:
   contents: write
 
 jobs:
-  run_group_A:
+  analyze_best:
     runs-on: ubuntu-latest
 
     services:
@@ -23,23 +24,6 @@ jobs:
           --health-timeout=5s
           --health-retries=30
 
-    strategy:
-      matrix:
-        playtype: [
-          "gewei_sha3",
-          "gewei_sha1",
-          "gewei_ding5",
-          "baiwei_ding3",
-          "baiwei_ding1",
-          "shiwei_sha3",
-          "shiwei_sha1",
-          "shiwei_ding5",
-          "qianwei_ding3",
-          "qianwei_ding1",
-          "wanwei_sha3",
-          "wanwei_sha1",
-        ]
-      max-parallel: 12
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -49,6 +33,8 @@ jobs:
       BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
       GH_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
       GITHUB_RUN_NUMBER: ${{ github.run_number }}
+      PLAYTYPES: 'gewei_sha3 gewei_sha1 gewei_ding5 baiwei_ding3 baiwei_ding1 shiwei_sha3 shiwei_sha1 shiwei_ding5 qianwei_ding3 qianwei_ding1 wanwei_sha3 wanwei_sha1 baiwei_sha3 baiwei_sha1 baiwei_ding5 gewei_ding3 gewei_ding1  qianwei_sha3 qianwei_sha1 qianwei_ding5 shiwei_ding3 shiwei_ding1 wanwei_ding5 wanwei_ding3 wanwei_ding1'
+
     steps:
       - name: 🕒 Debug Timezone Info
         run: |
@@ -102,32 +88,55 @@ jobs:
           echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=============================="
 
-      - name: 📥 下载并还原回测任务表（含解压 + 导入数据库）
+      - name: 📥 循环下载并导入所有回测任务
         run: |
-          echo "=============================="
-          echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
-          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/lotto_ai3_hitmatrix_p5_${{ matrix.playtype }}.sql.zip
-          
-          echo "🔓 解压任务表（使用密码）"
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
-          
-          echo "📁 解压结果如下："
-          ls -lh data/
-          
-          # 自动寻找解压后的 .sql 文件
-          SQL_FILE=$(find data/ -name "*.sql" | head -n 1)
-          if [ -z "$SQL_FILE" ]; then
-            echo "❌ 未找到解压后的 .sql 文件"
-            exit 1
-          fi
-          
-          echo "📥 开始导入 SQL 文件: $SQL_FILE"
-          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
-          
-          echo "✅ 数据导入完成"
-          echo "=============================="
+          mkdir -p data
+          for pt in $PLAYTYPES; do
+            echo "=============================="
+            echo "📦 下载任务 Tag: p5_${pt}"
+            curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${pt}/lotto_ai3_hitmatrix_p5_${pt}.sql.zip
 
+            echo "🔓 解压任务表（使用密码）"
+            unzip -P $BACKUP_PASSWORD tasks.zip -d data/
 
-      - name: Run All (自动闭环 + 覆盖上传)
+            echo "📁 解压结果如下："
+            ls -lh data/
+
+            SQL_FILE=$(find data/ -name "*.sql" | head -n 1)
+            if [ -z "$SQL_FILE" ]; then
+              echo "❌ 未找到解压后的 .sql 文件"
+              exit 1
+            fi
+
+            echo "📥 开始导入 SQL 文件: $SQL_FILE"
+            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
+
+            echo "✅ 数据导入完成：$pt"
+            echo "🧹 清理中间文件"
+            rm -rf data/*
+            echo "=============================="
+          done
+
+      - name: 🚀 执行 analyze_best_tasks 脚本
         run: |
-          python scripts/run_all.py "${{ matrix.playtype }}"
+          python scripts/analyze_best_tasks.py
+
+      - name: 📤 导出 best_tasks 表
+        run: |
+          mkdir -p export
+          echo "📦 导出 best_tasks 表为 SQL 文件"
+          mysqldump -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD \
+            $MYSQL_DATABASE best_tasks > export/best_tasks.sql
+
+      - name: 🔐 压缩并加密导出文件
+        run: |
+          sudo apt-get update && sudo apt-get install -y zip
+          echo "🔐 使用密码压缩为 zip 文件"
+          zip -P $BACKUP_PASSWORD export/best_tasks.zip export/best_tasks.sql
+
+      - name: 🚀 发布 best_tasks 压缩包到 Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
+        run: |
+          echo "📤 上传 best_tasks.zip 到 Release ➜ tag=best_tasks"
+          gh release create best_tasks export/best_tasks.zip -R suwei8/LottoAI3_HitMatrix_date -t "Best Tasks Export" -n "导出分析结果 best_tasks 表"

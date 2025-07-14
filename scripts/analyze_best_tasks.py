@@ -25,12 +25,22 @@ import json
 from sqlalchemy import text
 from utils.db import get_engine
 from utils.expert_hit_analysis import run_hit_analysis_batch, analyze_expert_hits
+import yaml
 
 # ✅ 控制参数
 ENABLE_HIT_CHECK = True
 ENABLE_TRACK_OPEN_RANK = True
 CHECK_MODE = "dingwei"
 LOG_SAVE_MODE = False
+
+# ✅ 获取项目根目录（脚本所在目录的上一级）
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+config_path = os.path.join(BASE_DIR, "config", "p5_base.yaml")
+
+with open(config_path, "r", encoding="utf-8") as f:
+    config = yaml.safe_load(f)
+LOTTERY_NAME = config.get("LOTTERY_NAME", "排列5")
+
 
 def analyze_best_tasks_for_issue(issue: str, lottery: str = "排列5"):
     engine = get_engine()
@@ -114,8 +124,49 @@ def analyze_best_tasks_for_issue(issue: str, lottery: str = "排列5"):
     return results
 
 if __name__ == "__main__":
-    issue = sys.argv[1] if len(sys.argv) > 1 else "2025178"
-    results = analyze_best_tasks_for_issue(issue)
+    # 🔹 获取最新期号
+    engine = get_engine()
+    with engine.connect() as conn:
+        latest_issue = conn.execute(text(
+            "SELECT MAX(issue_name) FROM lottery_results_p5"
+        )).scalar()
+    issue = latest_issue
+
+    # 🔹 执行分析
+    results = analyze_best_tasks_for_issue(issue, lottery=LOTTERY_NAME)
     for r in results:
         print(f"🎯 ID={r['id']} ➜ 分位={r['position']} ➜ 玩法={r['playtype']} ➜ 命中率：{r['hit_rate']:.2f} ➜ 推荐结果：{r['recommend']}")
 
+    from collections import defaultdict
+    position_name_map = {0: "万位", 1: "千位", 2: "百位", 3: "十位", 4: "个位"}
+    summary = defaultdict(list)
+    for r in results:
+        pos = r["position"]
+        if isinstance(r["recommend"], list):
+            summary[pos].extend(r["recommend"])
+
+    # 🔹 构造消息文本
+    summary_lines = [f"📊{LOTTERY_NAME}-{issue}期杀号汇总"]
+    for pos, nums in sorted(summary.items()):
+        unique_sorted = sorted(set(nums))
+        label = position_name_map.get(pos, f"分位{pos}")
+        summary_lines.append(f"{label}：{','.join(str(n) for n in unique_sorted)}")
+
+    summary_text = "\n".join(summary_lines)
+    print("\n📨 企业微信发送内容：\n" + summary_text)
+
+    # 🔹 企业微信推送
+    try:
+        import requests
+        response = requests.post(
+            os.getenv("WECHAT_API_URL"),
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": os.getenv("WECHAT_API_KEY")
+            },
+            json={"content": summary_text}
+        )
+        print(f"✅ 企业微信已发送，状态码: {response.status_code}")
+        print(f"返回内容：{response.text}")
+    except Exception as e:
+        print(f"❌ 企业微信发送失败: {e}")
