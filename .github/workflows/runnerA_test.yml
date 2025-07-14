@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         playtype: [
-          "p5_gewei_sha3",
+          "gewei_sha3",
         ]
       max-parallel: 1
     env:
@@ -97,7 +97,7 @@ jobs:
           echo "=============================="
           echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
           curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/lotto_ai3_hitmatrix_p5_${{ matrix.playtype }}.sql.zip
-          
+
           echo "🔓 解压任务表（使用密码）"
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
           
