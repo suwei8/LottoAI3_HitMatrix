@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         playtype: [
-          "baiwei_sha3",
+          "p5_gewei_sha3",
         ]
       max-parallel: 1
     env:
