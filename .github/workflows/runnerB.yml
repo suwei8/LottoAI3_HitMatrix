@@ -41,7 +41,7 @@ jobs:
           "wanwei_ding3",
           "wanwei_ding1"
         ]
-      max-parallel: 11
+      max-parallel: 13
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
