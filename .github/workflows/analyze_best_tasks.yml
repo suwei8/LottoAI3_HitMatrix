@@ -2,6 +2,8 @@ name: LottoAI3_HitMatrix_AnalyzeBest
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 */8 * * *'  # 每 8 小时自动执行
 
 permissions:
   contents: write
