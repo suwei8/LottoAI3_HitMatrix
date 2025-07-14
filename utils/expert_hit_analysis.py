@@ -82,7 +82,11 @@ def should_reverse_on_tie(num_counter: Counter, min_tied: int = 4):
             return count  # 返回具体数量
     return 0
 
-
+def get_position_name_map(lottery_name: str) -> dict:
+    if lottery_name == "排列5":
+        return {0: "万位", 1: "千位", 2: "百位", 3: "十位", 4: "个位"}
+    else:
+        return {0: "百位", 1: "十位", 2: "个位"}
 
 # 主方法：专家推荐命中分析
 def analyze_expert_hits(

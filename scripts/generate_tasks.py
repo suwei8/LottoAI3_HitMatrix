@@ -2,8 +2,7 @@
 """
 📌 脚本名称：generate_tasks.py
 🧠 脚本简介：
-我是 LottoAI3_HitMatrix 项目的任务生成器，专用于从 expert_predictions_p5 数据表中自动挖掘可用于回测分析的组合参数，并将其写入 tasks 表中，供后续分析模块使用。
-
+我是 LottoAI3_HitMatrix 项目的任务生成器，专用于从对应彩种的 expert_predictions_XXX 表中 数据表中自动挖掘可用于回测分析的组合参数，并将其写入 tasks 表中，供后续分析模块使用。
 🔍 功能亮点：
 1️⃣ 基础组合生成：根据指定玩法（如 “千位定1”）及其分位索引，遍历全部可用期号并依次构造不同回溯期数（lookback_n）的任务组合；
 2️⃣ 高命中优选扩展：自动读取 best_ranks 表中的优质推荐组合，排除基础组合已包含的部分，补充命中表现优异的 rank 组合，提高后续分析命中率潜力；
@@ -32,18 +31,37 @@ sys.stdout.reconfigure(encoding='utf-8')
 import json
 from datetime import datetime
 from sqlalchemy import text
-from utils.db import get_engine ,PLAYTYPE_MAPPING
+from utils.expert_hit_analysis import get_position_name_map
+from utils.db import (
+    get_engine,
+    get_table_name,
+    get_lottery_name,
+    get_playtype_mapping
+)
+from utils.config_loader import load_base_config
 from utils.logger import log
 engine = get_engine()
+# 支持命令行传入 lottery_type（默认 p5）
+playtype_en = sys.argv[1] if len(sys.argv) > 1 else "qianwei_ding1"
+lottery_type = sys.argv[2] if len(sys.argv) > 2 else "p5"  # 默认排列5
+
+# 动态获取表名
+lottery_name = get_lottery_name(lottery_type)
+prediction_table = get_table_name(lottery_name, "expert_predictions")
+tasks_table = get_table_name(lottery_name, "tasks")
+best_ranks_table = get_table_name(lottery_name, "best_ranks")
+
+base_config = load_base_config(lottery_type)
 
 with engine.begin() as conn:
     has_new_task = False  # ✅ 新增标志位
 
     # ======= 1️⃣ 基础组合 =======
+    log(f"📂 当前彩种: {lottery_name} ➜ 表前缀示例: {prediction_table}")
     log("📌 [STEP1] 生成基础组合")
-    POSITION_NAME_MAP = {0: "万位", 1: "千位", 2: "百位", 3: "十位", 4: "个位"}
+    POSITION_NAME_MAP = get_position_name_map(lottery_name)
 
-    playtype_en = sys.argv[1] if len(sys.argv) > 1 else "qianwei_ding1"
+    PLAYTYPE_MAPPING = get_playtype_mapping(lottery_type)
     playtype_name = PLAYTYPE_MAPPING.get(playtype_en)
 
     if not playtype_name:
@@ -61,9 +79,9 @@ with engine.begin() as conn:
 
     log(f"🎯 当前玩法: {playtype_name} ➜ 分位索引: {position}")
 
-    rows = conn.execute(text("""
+    rows = conn.execute(text(f"""
         SELECT DISTINCT issue_name
-        FROM expert_predictions_p5
+        FROM {prediction_table}
         WHERE playtype_name = :playtype_name
         ORDER BY issue_name DESC
     """), {"playtype_name": playtype_name}).fetchall()
@@ -71,7 +89,7 @@ with engine.begin() as conn:
     issues = [row[0] for row in rows]
 
     if not issues:
-        log(f"❌ expert_predictions_p5 中无可用预测记录 ➜ {playtype_name}")
+        log(f"❌ {prediction_table} 中无可用预测记录 ➜ {playtype_name}")
         sys.exit(1)
 
     lookback_ns = list(range(len(issues), 0, -1))  # ✅ 全部回溯
@@ -80,12 +98,7 @@ with engine.begin() as conn:
     query_playtype_name = playtype_name
     analyze_playtype_name = playtype_name
 
-    hit_rank_combinations = [
-        [1],
-        [2],
-        [3],
-        [1,2,3],
-    ]
+    hit_rank_combinations = base_config.get("HIT_RANK_COMBINATIONS", [[1], [2], [3], [1,2,3]])
 
     for lookback_n in lookback_ns:
         for rank in range(1, 11):  # 1 ~ 10
@@ -95,8 +108,8 @@ with engine.begin() as conn:
                 resolve_tie_mode = {"dingwei_sha": "False"}
                 reverse_on_tie = {"dingwei_sha": False}
 
-                exist = conn.execute(text("""
-                    SELECT 1 FROM tasks
+                exist = conn.execute(text(f"""
+                    SELECT 1 FROM {tasks_table}
                     WHERE analyze_playtype_name=:analyze_playtype_name
                     AND lookback_n=:lookback_n
                     AND enable_first=:enable_first
@@ -110,8 +123,8 @@ with engine.begin() as conn:
                     log(f"⚠️ 已存在基础组合 ➜ 跳过 lookback_n={lookback_n} ➜ rank={rank} ➜ hit_rank_list={hit_rank_list}")
                     continue
 
-                conn.execute(text("""
-                    INSERT INTO tasks
+                conn.execute(text(f"""
+                    INSERT INTO {tasks_table}
                     (position, query_playtype_name, analyze_playtype_name, lookback_n, hit_rank_list, enable,
                      skip_if_few, resolve_tie_mode, reverse_on_tie, status, created_at)
                     VALUES (:position, :query_playtype_name, :analyze_playtype_name, :lookback_n, :hit_rank_list, :enable,
@@ -136,7 +149,7 @@ with engine.begin() as conn:
     # ======= 2️⃣ 新增：自动追加 best_ranks 优质组合 =======
     log("📌 [STEP2] 从 best_ranks 追加优质组合")
 
-    rows = conn.execute(text("SELECT * FROM best_ranks")).mappings().all()
+    rows = conn.execute(text(f"SELECT * FROM {best_ranks_table}")).mappings().all()
     if not rows:
         log("✅ best_ranks 暂无数据，跳过")
     else:
@@ -161,8 +174,8 @@ with engine.begin() as conn:
                 resolve_tie_mode = {"dingwei_sha": "Next"}
                 reverse_on_tie = {"dingwei_sha": True}
 
-                exist = conn.execute(text("""
-                    SELECT 1 FROM tasks
+                exist = conn.execute(text(f"""
+                    SELECT 1 FROM {tasks_table}
                     WHERE position=:position
                     AND query_playtype_name=:query_playtype_name
                     AND analyze_playtype_name=:analyze_playtype_name
@@ -182,8 +195,8 @@ with engine.begin() as conn:
                     log(f"⚠️ 已存在 ➜ 跳过: {playtype} unhit={rank}")
                     continue
 
-                conn.execute(text("""
-                    INSERT INTO tasks
+                conn.execute(text(f"""
+                    INSERT INTO {tasks_table}
                     (position, query_playtype_name, analyze_playtype_name, lookback_n, hit_rank_list, enable,
                      skip_if_few, resolve_tie_mode, reverse_on_tie, status, created_at)
                     VALUES (:position, :query_playtype_name, :analyze_playtype_name, :lookback_n, :hit_rank_list, :enable,
@@ -209,6 +222,3 @@ with engine.begin() as conn:
         log("🟢 没有新任务插入 ➜ 外层可退出")
     else:
         log("🎉 本轮有新任务 ➜ 外层继续")
-
-
-

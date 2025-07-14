@@ -41,13 +41,13 @@ def run_command(cmd, capture=False):
     return result
 
 
-
 if __name__ == "__main__":
     playtype = sys.argv[1] if len(sys.argv) > 1 else "gewei_sha3"
+    lottery_type = sys.argv[2] if len(sys.argv) > 2 else "p5"
 
     while True:
         print("\n📌 === STEP 1: 生成任务 ===")
-        gen_result = run_command([sys.executable, "scripts/generate_tasks.py", playtype], capture=True)
+        gen_result = run_command([sys.executable, "scripts/generate_tasks.py", playtype, lottery_type], capture=True)
         gen_output = gen_result.stdout
         print(gen_output)
 
@@ -55,10 +55,9 @@ if __name__ == "__main__":
 
         print("\n📌 === STEP 2: 回测任务 ===")
 
-        # ✅ 实时打印 + 收集输出
         backtest_output_lines = []
         process = subprocess.Popen(
-            [sys.executable, "-u", "scripts/backtest.py", playtype],
+            [sys.executable, "-u", "scripts/backtest.py", playtype, lottery_type],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -66,23 +65,21 @@ if __name__ == "__main__":
         )
 
         for line in process.stdout:
-            print(line, end="")            # ✅ 实时打印
+            print(line, end="")
             backtest_output_lines.append(line)
 
         process.wait()
         backtest_output = "".join(backtest_output_lines)
 
-        # ✅ 提取“待执行任务数量”
         match = re.search(r"待执行任务[:：]\s*(\d+)", backtest_output)
         pending_count = int(match.group(1)) if match else -1
         print(f"📊 当前待执行任务数量: {pending_count}")
 
-        # ✅ 判断是否还有任务
         no_pending_task = pending_count == 0
 
         if no_new_task and no_pending_task:
             print("\n✅ 没有新任务且没有可执行任务 ➜ 主流程收工退出")
-            run_command([sys.executable, "scripts/upload_release.py", playtype])
+            run_command([sys.executable, "scripts/upload_release.py", playtype, lottery_type])
             break
 
         print("\n⏳ 还有任务或有新组合 ➜ 等待下一轮...")

@@ -15,9 +15,10 @@ from utils.upload_tools import do_final_dump_and_upload
 
 if __name__ == "__main__":
     playtype = sys.argv[1] if len(sys.argv) > 1 else "unknown"
+    lottery_type = sys.argv[2] if len(sys.argv) > 2 else "3d"
 
-    print(f"\n🕒 启动上传任务 ➜ {playtype}")
-    do_final_dump_and_upload(playtype)
+    print(f"\n🕒 启动上传任务 ➜ {lottery_type} ➜ {playtype}")
+    do_final_dump_and_upload(playtype, lottery_type)
 
     print("\n📢 正在发送企业微信通知...")
     result = subprocess.run(

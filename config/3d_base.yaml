@@ -1,7 +1,7 @@
-#  config/p5_base.yaml
+#  config/3d_base.yaml
 # === 通用默认配置 ===
 CHECK_MODE: dingwei
-LOTTERY_NAME: 排列5
+LOTTERY_NAME: 福彩3D
 ANALYSIS_MODE: rank
 
 # === 生成任务固定配置 ===
@@ -11,7 +11,6 @@ skip_if_fews: dingwei_sha
 resolve_tie_modes: dingwei_sha
 reverse_on_ties: dingwei_sha
 lookback_offsets: 0
-
 HIT_RANK_COMBINATIONS:
   - [1]
   - [2]
@@ -57,9 +56,8 @@ REVERSE_ON_TIE_DINGWEI_SHA2: False
 REVERSE_ON_TIE_DINGWEI_SHA3: False
 REVERSE_ON_TIE_DINGWEI_DAN1: False
 
-
 # === GitHub Releases上传相关配置 ===
 GITHUB_OWNER: suwei8
 GITHUB_REPO: LottoAI3_HitMatrix_date
-RELEASE_TAG: tasks-p5
+RELEASE_TAG: tasks-3d
 
