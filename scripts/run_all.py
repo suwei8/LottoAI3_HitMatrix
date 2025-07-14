@@ -2,6 +2,7 @@
 import os, sys
 import subprocess
 import threading
+import re
 from time import sleep, time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,7 +12,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)  # 切换到项目根目录
 
 # 上传间隔（单位：秒）
-UPLOAD_INTERVAL = 60 * 60  # 每 60 分钟自动上传一次
+UPLOAD_INTERVAL = 2 * 60  # 每 10 分钟自动上传一次
 
 def run_command(cmd, capture=False):
     print(f"\n🟢 执行: {cmd}")
@@ -67,11 +68,31 @@ if __name__ == "__main__":
         no_new_task = "🟢 没有新任务插入 ➜ 外层可退出" in gen_output
 
         print("\n📌 === STEP 2: 回测任务 ===")
-        backtest_result = run_command([sys.executable, "scripts/backtest.py"], capture=True)
-        backtest_output = backtest_result.stdout
-        print(backtest_output)
 
-        no_pending_task = "待执行任务: 0" in backtest_output
+        # ✅ 实时打印 + 收集输出
+        backtest_output_lines = []
+        process = subprocess.Popen(
+            [sys.executable, "-u", "scripts/backtest.py", playtype],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8"
+        )
+
+        for line in process.stdout:
+            print(line, end="")            # ✅ 实时打印
+            backtest_output_lines.append(line)
+
+        process.wait()
+        backtest_output = "".join(backtest_output_lines)
+
+        # ✅ 提取“待执行任务数量”
+        match = re.search(r"待执行任务[:：]\s*(\d+)", backtest_output)
+        pending_count = int(match.group(1)) if match else -1
+        print(f"📊 当前待执行任务数量: {pending_count}")
+
+        # ✅ 判断是否还有任务
+        no_pending_task = pending_count == 0
 
         if no_new_task and no_pending_task:
             print("\n✅ 没有新任务且没有可执行任务 ➜ 主流程收工退出")

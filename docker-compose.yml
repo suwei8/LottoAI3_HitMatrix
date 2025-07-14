@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: app-container
+    container_name: app-lottoai3_hitmatrix
 
     # ✅ 挂载整个本地项目目录，实时同步修改
     volumes:
@@ -41,8 +41,8 @@ services:
     command: tail -f /dev/null
 
   mysql:
-    image: mysql:latest
-    container_name: mysql-container
+    image: mysql:8.0.36
+    container_name: mysql8
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
