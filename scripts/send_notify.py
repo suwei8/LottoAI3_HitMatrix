@@ -1,7 +1,6 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding='utf-8')
-
 import requests
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import text

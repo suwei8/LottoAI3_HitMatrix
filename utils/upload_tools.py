@@ -64,17 +64,33 @@ def do_final_dump_and_upload(playtype_en):
     tag = f"p5_{playtype_en}"
     zip_name = f"lotto_ai3_hitmatrix_p5_{playtype_en}.sql.zip"
 
-    # ✅ 第一步：导出数据表（不加任何跳过生成列的参数，直接导出所有数据）
+    # ✅ 第一步：导出数据表
     dump_cmd = (
-        f"mysqldump --skip-triggers "
+        f"mysqldump "
         f"-h {MYSQL_HOST} -u{MYSQL_USER} -p\"{MYSQL_PASSWORD}\" "
+        f"--skip-triggers "
+        f"--set-gtid-purged=OFF "
+        f"--column-statistics=0 "
+        f"--add-drop-table "
+        f"--default-character-set=utf8mb4 "
+        f"--single-transaction "
+        f"--quick "
         f"{MYSQL_DATABASE} tasks best_tasks best_ranks > tasks_best.sql"
     )
     run_command(dump_cmd, use_shell=True)
 
+
     # ✅ 第二步：压缩 SQL 文件
-    zip_cmd = f"zip -P {BACKUP_PASSWORD} {zip_name} tasks_best.sql"
-    run_command(zip_cmd, use_shell=True)
+    import pyminizip  # 确保你已在 requirements.txt 中添加
+
+    # ✅ 使用 pyminizip 进行加密压缩
+    src_file = "tasks_best.sql"
+    zip_file = zip_name
+    password = BACKUP_PASSWORD
+    compression_level = 5  # 范围 1（最快）~ 9（最高压缩比）
+
+    pyminizip.compress(src_file, None, zip_file, password, compression_level)
+    print(f"✅ 已使用 pyminizip 压缩加密 ➜ {zip_file}")
 
     # ✅ 第三步：删除已有 release（如果存在）
     delete_cmd = (
@@ -90,15 +106,15 @@ def do_final_dump_and_upload(playtype_en):
         best_tasks = conn.execute(text("SELECT COUNT(*) FROM best_tasks")).scalar()
         now_str = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
         notes = (
-            f"📊 上传时间：{now_str}\n"
-            f"🧮 任务总数：{total_tasks}\n"
-            f"🎯 命中任务：{done_tasks}\n"
+            f"📊 上传时间：{now_str}"
+            f"🧮 任务总数：{total_tasks}"
+            f"🎯 命中任务：{done_tasks}"
             f"🏅 高等级任务：{best_tasks}"
         )
         create_cmd = (
             f"gh release create {tag} "
             f"--repo suwei8/LottoAI3_HitMatrix_date "
-            f"--title '{tag}' "
+            f"--title {tag} "
             f"--notes \"{notes}\""
         )
         run_command(create_cmd, use_shell=True)

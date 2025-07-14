@@ -1,7 +1,7 @@
 # 使用官方 Python 3.11 slim 镜像
 FROM python:3.11-slim
 
-# 安装必要的系统依赖（包括 gh CLI 所需）
+# 安装系统依赖 + 官方 MySQL 8.0 客户端 + gh CLI
 RUN apt-get update && apt-get install -y \
     curl \
     git \
@@ -9,19 +9,22 @@ RUN apt-get update && apt-get install -y \
     zip \
     gcc \
     build-essential \
-    default-mysql-client \
     python3-dev \
     libffi-dev \
     libssl-dev \
+    wget \
+    lsb-release \
+    && wget https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb \
+    && echo "mysql-apt-config mysql-apt-config/select-server select mysql-8.0" | debconf-set-selections \
+    && DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.29-1_all.deb \
+    && apt-get update && apt-get install -y mysql-client \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update && apt-get install -y gh \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 GitHub CLI（gh）
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-    | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-    > /etc/apt/sources.list.d/github-cli.list && \
-    apt-get update && apt-get install -y gh && \
-    rm -rf /var/lib/apt/lists/*
 
 # 升级 pip
 RUN pip install --upgrade pip
