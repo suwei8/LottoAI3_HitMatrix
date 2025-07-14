@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding='utf-8')
 from datetime import datetime
 import json
+import subprocess
 from sqlalchemy import text
 from utils.db import get_engine
 from utils.logger import log, save_log_file_if_needed
@@ -135,6 +136,10 @@ with engine.begin() as conn:
         ))
 
         log(f"📌 已写 best_ranks：未命中位={zero_ranks}")
+        # ✅ 追加上传动作
+        playtype = sys.argv[1] if len(sys.argv) > 1 else "6"
+        log("📦 准备调用 upload_release.py 上传达标策略...")
+        subprocess.run([sys.executable, "scripts/upload_release.py", playtype])
 
     # ✅ 任务执行后再打印一次
     remaining = conn.execute(text("SELECT COUNT(*) FROM tasks WHERE status = 'pending'")).scalar()

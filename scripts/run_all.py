@@ -1,9 +1,8 @@
 # scripts/run_all.py
 import os, sys
 import subprocess
-import threading
 import re
-from time import sleep, time
+from time import sleep
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding="utf-8")
@@ -11,8 +10,6 @@ sys.stdout.reconfigure(encoding="utf-8")
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)  # 切换到项目根目录
 
-# 上传间隔（单位：秒）
-UPLOAD_INTERVAL = 60 * 60  # 每 60 分钟自动上传一次
 
 def run_command(cmd, capture=False):
     print(f"\n🟢 执行: {cmd}")
@@ -44,20 +41,9 @@ def run_command(cmd, capture=False):
     return result
 
 
-def start_upload_timer(playtype, interval_sec):
-    def upload_loop():
-        while True:
-            sleep(interval_sec)
-            print(f"\n🕓 [定时上传线程] 已达 {interval_sec // 60} 分钟 ➜ 执行 upload_release.py")
-            run_command([sys.executable, "scripts/upload_release.py", playtype])
-    threading.Thread(target=upload_loop, daemon=True).start()
-
 
 if __name__ == "__main__":
     playtype = sys.argv[1] if len(sys.argv) > 1 else "gewei_sha3"
-
-    # ✅ 启动后台上传线程
-    start_upload_timer(playtype, UPLOAD_INTERVAL)
 
     while True:
         print("\n📌 === STEP 1: 生成任务 ===")

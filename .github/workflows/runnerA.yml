@@ -2,6 +2,7 @@ name: LottoAI3_HitMatrix_runnerA
 
 on:
   workflow_dispatch:
+
 permissions:
   contents: write
 
