@@ -12,7 +12,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)  # 切换到项目根目录
 
 # 上传间隔（单位：秒）
-UPLOAD_INTERVAL = 60 * 60  # 每 60 分钟自动上传一次
+UPLOAD_INTERVAL = 2 * 60  # 每 60 分钟自动上传一次
 
 def run_command(cmd, capture=False):
     print(f"\n🟢 执行: {cmd}")
