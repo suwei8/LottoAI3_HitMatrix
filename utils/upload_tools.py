@@ -1,7 +1,12 @@
 # utils/upload_tools.py
 import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import subprocess
 import shlex
+from sqlalchemy import text
+from utils.db import get_engine
+from datetime import datetime
+from zoneinfo import ZoneInfo  # ✅ 新增
 
 def run_command(cmd, capture=False, use_shell=False):
     print(f"\n🟢 执行: {cmd}")
@@ -44,9 +49,7 @@ def run_command(cmd, capture=False, use_shell=False):
 
 
 def do_final_dump_and_upload(playtype_en):
-    import os
-    from datetime import datetime
-
+    engine = get_engine()
     MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
     MYSQL_USER = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
@@ -81,13 +84,24 @@ def do_final_dump_and_upload(playtype_en):
     run_command(delete_cmd, use_shell=True)
 
     # ✅ 第四步：创建新的 release（确保不会交互卡死）
-    create_cmd = (
-        f"gh release create {tag} "
-        f"--repo suwei8/LottoAI3_HitMatrix_date "
-        f"--title '{tag}' "
-        f"--notes 'Auto uploaded by script for {playtype_en}'"
-    )
-    run_command(create_cmd, use_shell=True)
+    with engine.begin() as conn:
+        total_tasks = conn.execute(text("SELECT COUNT(*) FROM tasks")).scalar()
+        done_tasks = conn.execute(text("SELECT COUNT(*) FROM tasks WHERE status = 'done'")).scalar()
+        best_tasks = conn.execute(text("SELECT COUNT(*) FROM best_tasks")).scalar()
+        now_str = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
+        notes = (
+            f"📊 上传时间：{now_str}\n"
+            f"🧮 任务总数：{total_tasks}\n"
+            f"🎯 命中任务：{done_tasks}\n"
+            f"🏅 高等级任务：{best_tasks}"
+        )
+        create_cmd = (
+            f"gh release create {tag} "
+            f"--repo suwei8/LottoAI3_HitMatrix_date "
+            f"--title '{tag}' "
+            f"--notes \"{notes}\""
+        )
+        run_command(create_cmd, use_shell=True)
 
     # ✅ 第五步：上传 zip 文件
     upload_cmd = (
