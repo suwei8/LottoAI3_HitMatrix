@@ -21,7 +21,7 @@ def run_command(cmd, capture=False, use_shell=False):
 
     if capture:
         result = subprocess.run(
-            cmd if isinstance(cmd, list) else shlex.split(cmd),
+            cmd,
             shell=use_shell,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -32,14 +32,15 @@ def run_command(cmd, capture=False, use_shell=False):
         )
     else:
         result = subprocess.run(
-            cmd if isinstance(cmd, list) else shlex.split(cmd),
+            cmd,
             shell=use_shell,
             env=env
         )
 
     if result.returncode != 0:
         print(f"❌ 命令失败: {cmd}")
-        print("命令输出：", result.stdout)
+        if result.stdout:
+            print("命令输出：", result.stdout)
         sys.exit(result.returncode)
     return result
 
@@ -92,6 +93,10 @@ def do_final_dump_and_upload(playtype_en: str, lottery_type: str = "3d"):
         f"--single-transaction --quick "
         f"{MYSQL_DATABASE} {tasks_table} {best_tasks_table} {best_ranks_table} > tasks_best.sql"
     )
+    print(f"📤 dump_cmd = {dump_cmd}")
+    print("tasks_table =", tasks_table)
+    print("best_tasks_table =", best_tasks_table)
+    print("best_ranks_table =", best_ranks_table)
 
     run_command(dump_cmd, use_shell=True)
     time.sleep(2)  # ✅ 延时2秒，避免数据库未立即释放或压缩前抢占资源
