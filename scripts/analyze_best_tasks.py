@@ -1,12 +1,11 @@
-import os
-import sys
+import os, sys, time
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import yaml
+from datetime import datetime
 from sqlalchemy import text
 from collections import defaultdict
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from utils.db import get_engine, get_lottery_name, get_table_name
 from utils.config_loader import load_base_config
 from utils.expert_hit_analysis import run_hit_analysis_batch, analyze_expert_hits, get_position_name_map
@@ -117,10 +116,15 @@ if __name__ == "__main__":
         )).scalar()
     issue = latest_issue
 
+    # ✅ 记录开始时间（可放更前面记录）
+    start_time = time.time()
+
     results = analyze_best_tasks_for_issue(issue, lottery_name, best_tasks_table, filter_position=filter_position)
 
     for r in results:
         print(f"🎯 ID={r['id']} ➜ 分位={r['position']} ➜ 玩法={r['playtype']} ➜ 命中率：{r['hit_rate']:.2f} ➜ 推荐结果：{r['recommend']}")
+
+
 
     summary = defaultdict(list)
     position_name_map = get_position_name_map(lottery_name)
@@ -129,11 +133,26 @@ if __name__ == "__main__":
         if isinstance(r["recommend"], list):
             summary[pos].extend(r["recommend"])
 
-    summary_lines = [f"📊{lottery_name}-{issue}期杀号汇总"]
+    # ✅ 运行编号
+    run_number = os.getenv("GITHUB_RUN_NUMBER", "本地调试")
+
+    # ✅ 构造 summary 文本
+    summary_lines = [
+        f"📊{lottery_name}-{issue}期杀号汇总",
+        f"【Actions 运行编号: #{run_number}】"
+    ]
     for pos, nums in sorted(summary.items()):
         unique_sorted = sorted(set(nums))
         label = position_name_map.get(pos, f"分位{pos}")
-        summary_lines.append(f"{label}：{','.join(str(n) for n in unique_sorted)}")
+        summary_lines.append(f"{label}（{len(unique_sorted)}）：{','.join(str(n) for n in unique_sorted)}")
+
+
+    # ✅ 加入耗时和时间
+    end_time = time.time()
+    duration = int(end_time - start_time)
+    summary_lines.append(f"📌 耗时：{duration // 60}分{duration % 60}秒")
+    summary_lines.append("🕒 分析结束时间：")
+    summary_lines.append(f" {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     summary_text = "\n".join(summary_lines)
     print("\n📨 企业微信发送内容：\n" + summary_text)
