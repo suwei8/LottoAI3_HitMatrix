@@ -93,4 +93,4 @@ jobs:
 
       - name: 📊 分析达标任务并打印命中表现
         run: |
-          python scripts/analyze_best_tasks.py
+          python scripts/analyze_best_tasks.py p5
