@@ -18,13 +18,20 @@ CHECK_MODE = "dingwei"
 LOG_SAVE_MODE = False
 
 
-def analyze_best_tasks_for_issue(issue: str, lottery_name: str, best_tasks_table: str):
+def analyze_best_tasks_for_issue(issue: str, lottery_name: str, best_tasks_table: str, filter_position: int = None):
     engine = get_engine()
     results = []
 
     with engine.begin() as conn:
-        rows = list(conn.execute(text(f"SELECT * FROM {best_tasks_table} WHERE hit_rate = 1.0")).mappings())
-        print(f"🎯 共 {len(rows)} 个任务命中率为 1.0，将逐个分析...")
+        sql = f"SELECT * FROM {best_tasks_table} WHERE hit_rate = 1.0"
+        if filter_position is not None:
+            sql += f" AND position = {filter_position}"
+        rows = list(conn.execute(text(sql)).mappings())
+        print(f"\n🎯 共 {len(rows)} 个任务命中率为 1.0", end="")
+        if filter_position is not None:
+            print(f"，分位={filter_position}", end="")
+        print("，将逐个分析...")
+
         for row in rows:
             task_id = row["id"]
             position = row["position"]
@@ -97,6 +104,7 @@ def analyze_best_tasks_for_issue(issue: str, lottery_name: str, best_tasks_table
 
 if __name__ == "__main__":
     lottery_type = sys.argv[1] if len(sys.argv) > 1 else "p5"
+    filter_position = int(sys.argv[2]) if len(sys.argv) > 2 else None  # 👉 新增行
     lottery_name = get_lottery_name(lottery_type)
     config = load_base_config(lottery_type)
     result_table = get_table_name(lottery_name, "lottery_results")
@@ -109,7 +117,7 @@ if __name__ == "__main__":
         )).scalar()
     issue = latest_issue
 
-    results = analyze_best_tasks_for_issue(issue, lottery_name, best_tasks_table)
+    results = analyze_best_tasks_for_issue(issue, lottery_name, best_tasks_table, filter_position=filter_position)
 
     for r in results:
         print(f"🎯 ID={r['id']} ➜ 分位={r['position']} ➜ 玩法={r['playtype']} ➜ 命中率：{r['hit_rate']:.2f} ➜ 推荐结果：{r['recommend']}")

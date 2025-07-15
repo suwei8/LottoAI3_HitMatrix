@@ -8,7 +8,12 @@ permissions:
 
 jobs:
   analyze_best:
+    name: Analyze 分位${{ matrix.position }}
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        position: [0, 1, 2, 3, 4]
 
     services:
       mysql:
@@ -93,4 +98,4 @@ jobs:
 
       - name: 📊 分析达标任务并打印命中表现
         run: |
-          python scripts/analyze_best_tasks.py p5
+          python scripts/analyze_best_tasks.py p5 ${{ matrix.position }}
