@@ -23,8 +23,8 @@ def analyze_best_tasks_for_issue(issue: str, lottery_name: str, best_tasks_table
     results = []
 
     with engine.begin() as conn:
-        rows = conn.execute(text(f"SELECT * FROM {best_tasks_table} WHERE hit_rate = 1.0")).mappings()
-        print(f"\n🎯 共 {len(rows)} 个任务命中率为 1.0，将逐个分析...")
+        rows = list(conn.execute(text(f"SELECT * FROM {best_tasks_table} WHERE hit_rate = 1.0")).mappings())
+        print(f"🎯 共 {len(rows)} 个任务命中率为 1.0，将逐个分析...")
         for row in rows:
             task_id = row["id"]
             position = row["position"]
