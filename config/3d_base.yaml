@@ -58,6 +58,6 @@ REVERSE_ON_TIE_DINGWEI_DAN1: False
 
 # === GitHub Releases上传相关配置 ===
 GITHUB_OWNER: suwei8
-GITHUB_REPO: LottoAI3_HitMatrix_date
+GITHUB_REPO: LottoAI3_HitMatrix_date_3d
 RELEASE_TAG: 3d
 
