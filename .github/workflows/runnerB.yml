@@ -39,7 +39,7 @@ jobs:
           "shiwei_ding1",
           "wanwei_ding5",
           "wanwei_ding3",
-          "wanwei_ding1"
+          "wanwei_ding1",
         ]
       max-parallel: 13
     env:
@@ -109,7 +109,7 @@ jobs:
           echo "=============================="
           echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
           curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/p5_hitmatrix_${{ matrix.playtype }}.sql.zip
-          
+
           echo "🔓 解压任务表（使用密码）"
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
           
@@ -132,4 +132,5 @@ jobs:
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
-          python scripts/run_all.py "${{ matrix.playtype }}"
+          python scripts/run_all.py "${{ matrix.playtype }}" p5
+
