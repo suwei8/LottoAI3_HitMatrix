@@ -111,12 +111,12 @@ jobs:
           echo "=============================="
           echo "📦 下载任务 Tag: 3d_${{ matrix.playtype }}"
           gh release download 3d_${{ matrix.playtype }} \
-            --pattern "3d_hitmatrix_${{ matrix.playtype }}.sql.zip" \
+            --pattern "tasks_3d_${{ matrix.playtype }}.sql.zip" \
             --repo suwei8/LottoAI3_HitMatrix_date_3d \
             --dir data
 
           echo "🔓 解压任务表（使用密码）"
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} data/3d_hitmatrix_${{ matrix.playtype }}.sql.zip -d data/
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} data/tasks_3d_${{ matrix.playtype }}.sql.zip -d data/
 
           echo "📁 解压结果如下："
           ls -lh data/
