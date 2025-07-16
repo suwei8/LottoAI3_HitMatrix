@@ -13,7 +13,8 @@ jobs:
 
     strategy:
       matrix:
-        position: [0, 1, 2, 3, 4]
+#        position: [0, 1, 2, 3, 4]
+        position: [3]
 
     services:
       mysql:
