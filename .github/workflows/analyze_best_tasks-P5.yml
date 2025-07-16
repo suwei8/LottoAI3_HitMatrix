@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_AnalyzeBest
+name: LottoAI3_HitMatrix_AnalyzeBest-P5
 
 on:
   workflow_dispatch:
