@@ -77,7 +77,7 @@ def do_final_dump_and_upload(playtype_en: str, lottery_type: str = "3d"):
     os.environ["GITHUB_TOKEN"] = GH_TOKEN
 
     tag = f"{RELEASE_TAG}_{playtype_en}"
-    zip_name = f"{lottery_type}_hitmatrix_{playtype_en}.sql.zip"
+    zip_name = f"{lottery_type}_tasks_{playtype_en}.sql.zip"
 
     # === Step1: 导出 SQL ===
 
