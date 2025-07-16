@@ -30,6 +30,7 @@ if not tasks:
 
 log(f"🌟 待执行任务: {len(tasks)}")
 
+completed_count = 0
 for task in tasks:
     with engine.begin() as conn:
         position = int(task["position"])
@@ -144,11 +145,23 @@ for task in tasks:
         log(f"📌 已写 best_ranks：未命中位={zero_ranks}")
         best_ranks_count = conn.execute(text(f"SELECT COUNT(*) FROM {best_ranks_table}")).scalar()
         log(f"📊 当前 {best_ranks_table} 总记录数: {best_ranks_count}")
+        completed_count += 1  # ✅ 统计已完成任务数
+
+    # ✅ 每完成50个额外执行一次上传
+    if completed_count % 50 == 0:
+        log(f"📦 累计完成 {completed_count} 条任务 ➞ 执行额外上传")
+        subprocess.run([sys.executable, "scripts/upload_release.py", playtype_en, lottery_type])
+        time.sleep(1)
 
     # 离开 with 以后执行子进程 upload
     log("📤 单条任务完成 ➞ 启动增量上传")
     subprocess.run([sys.executable, "scripts/upload_release.py", playtype_en, lottery_type])
     time.sleep(1)  # 给输出、操作程序给一点恢复时间
+
+if completed_count % 50 != 0:
+    log(f"📦 最后 {completed_count % 50} 条任务未满50 ➞ 执行最终上传")
+    subprocess.run([sys.executable, "scripts/upload_release.py", playtype_en, lottery_type])
+    time.sleep(1)
 
 # 执行后统计打印
 with engine.begin() as conn:
