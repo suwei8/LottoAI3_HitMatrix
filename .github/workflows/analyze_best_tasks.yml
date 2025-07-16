@@ -38,6 +38,8 @@ jobs:
       BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
       GH_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
       GITHUB_RUN_NUMBER: ${{ github.run_number }}
+      WECHAT_API_URL: ${{ secrets.WECHAT_API_URL }}
+      WECHAT_API_KEY: ${{ secrets.WECHAT_API_KEY }}
 
     steps:
       - name: 🕒 打印时间（UTC + Asia/Shanghai）
