@@ -1,0 +1,136 @@
+name: LottoAI3_HitMatrix_runnerA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run_group_A:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0.36
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+
+    strategy:
+      matrix:
+        playtype: [
+          "shuangdan_2",
+          "liuma_zuxuan",
+          "sha2",
+          "shiwei_ding3",
+          "baiwei_ding1",
+          "gewei_ding1",
+          "ding_3x3x3_shi",
+          "ding_4x4x4_bai",
+          "ding_4x4x4_ge",
+          "ding_5x5x5_shi",
+          "ding_5x5x5_ge",
+        ]
+      max-parallel: 11
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+      BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+      GH_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
+      GITHUB_RUN_NUMBER: ${{ github.run_number }}
+      WECHAT_API_URL: ${{ secrets.WECHAT_API_URL }}
+      WECHAT_API_KEY: ${{ secrets.WECHAT_API_KEY }}
+    steps:
+      - name: 🕒 Debug Timezone Info
+        run: |
+          echo "==== 🕒 当前时间 ===="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "Asia/Shanghai: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+          echo "====================="
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
+        run: |
+          echo "=============================="
+          echo "🎯 开始执行 Download P5分析表 工作流"
+          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
+          START_TIME=$(date +%s)
+
+          echo "📁 创建目录 & 下载 ZIP"
+          mkdir -p data
+          curl -L -o data/lotto_p5_backup.zip \
+            https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/backup-3d/lotto_3d_backup.zip
+
+          echo "🔓 解压 ZIP"
+          sudo apt-get update && sudo apt-get install -y unzip pv
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_3d_backup.zip
+
+          echo "🚀 恢复数据库（显示导入进度）"
+          gunzip -c data/lotto_3d.sql.gz | \
+            pv -s $(gzip -l data/lotto_3d.sql.gz | awk 'NR==2 {print $2}') | \
+            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+
+          echo "🧹 清理中间文件"
+          rm -rf data/*
+
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "=============================="
+          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
+          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
+
+      - name: 📥 下载并还原回测任务表（含解压 + 导入数据库）
+        run: |
+          echo "=============================="
+          echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
+          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/3d_${{ matrix.playtype }}/tasks_3d_${{ matrix.playtype }}.sql.zip
+
+          echo "🔓 解压任务表（使用密码）"
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
+          
+          echo "📁 解压结果如下："
+          ls -lh data/
+          
+          # 自动寻找解压后的 .sql 文件
+          SQL_FILE=$(find data/ -name "*.sql" | head -n 1)
+          if [ -z "$SQL_FILE" ]; then
+            echo "❌ 未找到解压后的 .sql 文件"
+            exit 1
+          fi
+          
+          echo "📥 开始导入 SQL 文件: $SQL_FILE"
+          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
+          
+          echo "✅ 数据导入完成"
+          echo "=============================="
+
+
+      - name: Run All (自动闭环 + 覆盖上传)
+        run: |
+          python scripts/run_all.py "${{ matrix.playtype }}" p5
+
