@@ -110,26 +110,26 @@ jobs:
         run: |
           echo "=============================="
           echo "📦 下载任务 Tag: 3d_${{ matrix.playtype }}"
-          curl -H "Authorization: token ${{ secrets.PERSONAL_GH_PAT }}" \
-            -L -o tasks.zip \
-            https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/3d_${{ matrix.playtype }}/tasks_3d_${{ matrix.playtype }}.sql.zip
+          gh release download 3d_${{ matrix.playtype }} \
+            --pattern "tasks_3d_${{ matrix.playtype }}.sql.zip" \
+            --repo suwei8/LottoAI3_HitMatrix_date_3d \
+            --dir data
 
           echo "🔓 解压任务表（使用密码）"
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
-          
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} data/tasks_3d_${{ matrix.playtype }}.sql.zip -d data/
+
           echo "📁 解压结果如下："
           ls -lh data/
-          
-          # 自动寻找解压后的 .sql 文件
+
           SQL_FILE=$(find data/ -name "*.sql" | head -n 1)
           if [ -z "$SQL_FILE" ]; then
             echo "❌ 未找到解压后的 .sql 文件"
             exit 1
           fi
-          
+
           echo "📥 开始导入 SQL 文件: $SQL_FILE"
           mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
-          
+
           echo "✅ 数据导入完成"
           echo "=============================="
 
