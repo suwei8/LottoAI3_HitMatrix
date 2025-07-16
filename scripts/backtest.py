@@ -75,13 +75,11 @@ for task in tasks:
             )
         )
 
-        total_issues = result["total_issues"]
+        hit_count = result["hit_count"]
         miss_count = result["miss_count"]
         skip_count = result["skip_count"]
-
-        effective_total = total_issues - skip_count
-        hit_count = effective_total - miss_count
-        hit_rate = round(hit_count / effective_total, 4) if effective_total > 0 else 0
+        total_issues = hit_count + miss_count
+        hit_rate = round(hit_count / total_issues, 4) if total_issues > 0 else 0
 
         log(f"📈 ID={task['id']} ➞ 命中 {hit_count}/{total_issues} ➞ 命中率={hit_rate}")
 
@@ -99,7 +97,7 @@ for task in tasks:
             updated_at=datetime.now()
         ))
 
-        if hit_rate >= 0.8:
+        if hit_rate >= 0.9:
             conn.execute(text(f"""
                 INSERT IGNORE INTO {best_tasks_table}
                 (position, playtype, lookback_n, hit_rank_list, enable, skip_if_few,

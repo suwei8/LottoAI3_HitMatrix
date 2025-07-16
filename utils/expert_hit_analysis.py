@@ -1,46 +1,5 @@
 # utils/expert_hit_analysis.py
 
-"""
-expert_hit_analysis.py
-
-📌 模块功能简介：
-
-本模块用于分析专家推荐记录的命中表现，并基于统计结果生成杀号、胆码、定位杀号、定位定胆等推荐数字，
-具备高度扩展性与灵活性，支持全自动批量分析与策略评估。
-
-🔧 核心功能包括：
-- analyze_expert_hits():
-    单期专家命中分析函数，支持两种专家筛选模式：
-    1）命中排名模式（mode="rank"）：按指定玩法在历史期号中统计命中次数，提取命中排名前N的专家；
-    2）命中次数模式（mode="hitcount"）：按多个玩法设置命中次数条件（如 "杀一" ≥ 2）筛选专家。
-    支持以下推荐策略：
-        - sha1/sha2：杀号（频次前/后数字）
-        - dan1/dan2：定胆（频次前/后数字）
-        - dingwei_sha1/2/3：定位杀号（指定位置频次统计）
-        - dingwei_dan1：定位定胆（指定位置）
-    支持指定推荐数字频次排名：[1,2,-1,"prev","prev+1","prev-2"]等复合表达式；
-    并提供 tie_mode（并列处理策略）和 skip_flag（推荐不足跳过）等细粒度控制。
-
-- run_hit_analysis_batch():
-    支持对多个期号批量执行推荐分析，输出每期推荐、命中结果与总结统计；
-    支持跳过策略、回溯不足期、prev定位提取、开奖号码排名追踪等增强能力；
-    可传入 log_callback 实现实时日志输出；支持 streamlit.stop 分析中止控制。
-
-- check_hit_on_result():
-    提供杀号/胆码/定位杀号/定位定胆等策略的实际命中判断；
-    自动对比开奖号执行命中验证，附带详细打印与音效提示（支持本地与浏览器播放）。
-
-- track_open_rank():
-    用于统计开奖号码在推荐数字排行榜中的排名位置，辅助评估推荐合理性。
-
-✅ 适用场景：
-- Streamlit 页面策略推荐与命中评估
-- 脚本定时任务策略效果验证与日志分析
-- 自动化测试与策略模型迭代优化
-"""
-
-
-
 import logging
 logging.getLogger("streamlit.runtime.scriptrunner_utils.script_run_context").setLevel(logging.ERROR)
 logging.getLogger("streamlit.runtime.state.session_state_proxy").setLevel(logging.ERROR)
@@ -772,8 +731,9 @@ def run_hit_analysis_batch(
     global print
     print = log  # ✅ 重定向 print 到 log，实现捕获
     from collections import Counter
-    miss_count = 0            # 未命中次数
-    skip_count = 0            # ✅ 新增：跳过本期（推荐不足或回溯为空）
+    hit_count = 0
+    miss_count = 0
+    skip_count = 0
     open_rank_counter = Counter()  # ✅ 累计开奖号码在推荐频次中出现的排名
     # print(f"🟢 lookback_n (batch) = {analysis_kwargs.get('lookback_n')}")
     # ✅ 支持 query_issues = ['All']，自动提取所有期号
@@ -844,6 +804,14 @@ def run_hit_analysis_batch(
             if log_callback:
                 log_callback()
 
+        # ✅ 提前判断策略是否都未启用，直接跳过
+        strategies = [result.get(k) for k in ["sha1", "sha2", "dan1", "dan2", "dingwei_sha", "dingwei_sha2", "dingwei_sha3", "dingwei_dan"]]
+        if all(v is None for v in strategies):
+            print("⚠️ 没有启用任何策略，默认视为跳过")
+            skip_count += 1
+            continue
+
+        # ✅ 以下开始正式执行命中判断
         if enable_hit_check:
             try:
                 hit_result = check_hit_on_result(
@@ -859,6 +827,7 @@ def run_hit_analysis_batch(
                     check_mode=check_mode,
                     dingwei_dan=result.get("dingwei_dan"),
                 )
+
                 if log_callback:
                     log_callback()
 
@@ -867,6 +836,8 @@ def run_hit_analysis_batch(
 
                 if hit_result is False:
                     miss_count += 1
+                else:
+                    hit_count += 1   # ✅ 命中
             except ValueError as e:
                 if str(e) == "open_code_missing":
                     print("⚠️ 未找到开奖号码，跳过本期统计")
@@ -874,14 +845,19 @@ def run_hit_analysis_batch(
                     continue
                 else:
                     raise
+        else:
+            print("⚠️ 本期未执行命中判断，跳过")
+            skip_count += 1
+            continue
 
     # ✅ 循环结束后打印总统计
     if enable_hit_check:
         print("=" * 50)
-        total_issues = len(query_issues)
-        hit_count = total_issues - miss_count - skip_count
-        print(f"📉 共 {total_issues} 期，未命中次数：{miss_count} 期，跳过 {skip_count} 期")
-        print(f"✅ 命中率：{hit_count} / {total_issues}")
+        total_analyzed = hit_count + miss_count  # ✅ 只统计真实命中判断过的期数
+        print(f"📉 共 {total_analyzed} 期，未命中次数：{miss_count} 期，跳过 {skip_count} 期")
+        print(f"✅ 命中率：{hit_count} / {total_analyzed} = {hit_count / total_analyzed:.4f}" if total_analyzed > 0 else "✅ 命中率：0")
+        print(f"策略配置文件：{strategy_relative_path}")
+
         print(f"策略配置文件：{strategy_relative_path}")   # ✅ 直接一起 print
     if enable_track_open_rank:
         print("📊 开奖号码在推荐数字频次排序中的排名统计：")
@@ -901,9 +877,11 @@ def run_hit_analysis_batch(
         log_callback()
 
     return {
-        "total_issues": len(query_issues),
+        "total_issues": hit_count + miss_count,  # ✅ 只返回有效分析的总期数
+        "hit_count": hit_count,                  # ✅ 新增
         "miss_count": miss_count,
         "skip_count": skip_count,
+
         "open_rank_counter": open_rank_counter,   # ✅ 新增
         "max_rank_length": max_rank_length        # ✅ 新增
     }
