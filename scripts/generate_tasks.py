@@ -70,12 +70,17 @@ with engine.begin() as conn:
 
     position = None
     for k, v in POSITION_NAME_MAP.items():
-        if playtype_name.startswith(v):
-            position = k
-            break
+        for k, v in POSITION_NAME_MAP.items():
+            if v in playtype_name:
+                position = k
+                break
+
+
     if position is None:
-        log(f"❌ 未匹配到分位: {playtype_name}")
-        sys.exit(1)
+        # ➕ 新增兼容：无定位玩法默认设为 -1
+        log(f"⚠️ 未匹配到分位 ➜ 视为无定位玩法: {playtype_name}")
+        position = -1
+
 
     log(f"🎯 当前玩法: {playtype_name} ➜ 分位索引: {position}")
 
