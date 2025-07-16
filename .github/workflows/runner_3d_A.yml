@@ -39,7 +39,7 @@ jobs:
           "ding_5x5x5_shi",
           "ding_5x5x5_ge",
         ]
-      max-parallel: 1
+      max-parallel: 5
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
