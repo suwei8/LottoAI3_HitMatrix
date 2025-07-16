@@ -82,12 +82,14 @@ jobs:
 
           echo "📁 创建目录 & 下载 ZIP"
           mkdir -p data
-          curl -L -o data/lotto_3d_backup.zip \
-            https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/backup-3d/lotto_3d_backup.zip
+          gh release download backup-3d \
+            --pattern "lotto_3d_backup.zip" \
+            --repo suwei8/LottoAI3_HitMatrix_date_3d \
+            --dir data
 
           echo "🔓 解压 ZIP"
           sudo apt-get update && sudo apt-get install -y unzip pv
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_3d_backup.zip
+          unzip -P "${{ secrets.BACKUP_PASSWORD }}" -d data/ data/lotto_3d_backup.zip
 
           echo "🚀 恢复数据库（显示导入进度）"
           gunzip -c data/lotto_3d.sql.gz | \
@@ -108,7 +110,9 @@ jobs:
         run: |
           echo "=============================="
           echo "📦 下载任务 Tag: 3d_${{ matrix.playtype }}"
-          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/3d_${{ matrix.playtype }}/tasks_3d_${{ matrix.playtype }}.sql.zip
+          curl -H "Authorization: token ${{ secrets.PERSONAL_GH_PAT }}" \
+            -L -o tasks.zip \
+            https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/3d_${{ matrix.playtype }}/tasks_3d_${{ matrix.playtype }}.sql.zip
 
           echo "🔓 解压任务表（使用密码）"
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
