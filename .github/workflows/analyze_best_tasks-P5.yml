@@ -74,7 +74,7 @@ jobs:
           mkdir -p data
           curl -L -o data/lotto_p5_backup.zip \
             https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/backup-p5/lotto_p5_backup.zip
-
+          
           echo "🔓 解压 ZIP"
           sudo apt-get update && sudo apt-get install -y unzip pv
           unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_p5_backup.zip
