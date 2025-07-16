@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_runner_P5-A
+name: LottoAI3_HitMatrix_runner_P5-B
 
 on:
   workflow_dispatch:
