@@ -4,6 +4,7 @@ import tempfile
 import subprocess
 import requests
 import zipfile
+import time
 from dotenv import load_dotenv
 from utils.db import get_engine
 from sqlalchemy import text, inspect
@@ -102,8 +103,10 @@ def main():
             path = download_and_unzip_to(tmpdir, url, BACKUP_PASSWORD)
             import_sql_file(path)
 
-    for url in BACKUP_LINKS["tasks_p5"]:
+    for idx, url in enumerate(BACKUP_LINKS["tasks_p5"]):
+        print(f"\n⏳ 下载第 {idx + 1}/{len(BACKUP_LINKS['tasks_p5'])} 个任务 SQL，延时 1 秒...")
         download_and_unzip_to(DATA_DIR, url, BACKUP_PASSWORD)
+        time.sleep(1)
 
     print("\n🧌 执行 SQL 合并： merge_sqls_with_incremental_id.py")
     subprocess.run([sys.executable, os.path.join(PROJECT_ROOT, "scripts", "merge_sqls_with_incremental_id.py")], check=True)
@@ -111,6 +114,5 @@ def main():
     merged_path = os.path.join(DATA_DIR, "merged_tasks_p5.sql")
     import_sql_file(merged_path)
     print("✅ 初始化流程全部完成")
-
 if __name__ == "__main__":
     main()
