@@ -40,7 +40,7 @@ jobs:
           "ding_4x4x4_shi",
           "ding_5x5x5_bai",
         ]
-      max-parallel: 12
+      max-parallel: 1
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -73,7 +73,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
+      - name: 📦 下载并还原 3D备份（含进度显示 + 耗时统计）
         run: |
           echo "=============================="
           echo "🎯 开始执行 Download P5分析表 工作流"
@@ -83,7 +83,7 @@ jobs:
 
           echo "📁 创建目录 & 下载 ZIP"
           mkdir -p data
-          curl -L -o data/lotto_p5_backup.zip \
+          curl -L -o data/lotto_3d_backup.zip \
             https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/backup-3d/lotto_3d_backup.zip
 
           echo "🔓 解压 ZIP"
@@ -108,7 +108,7 @@ jobs:
       - name: 📥 下载并还原回测任务表（含解压 + 导入数据库）
         run: |
           echo "=============================="
-          echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
+          echo "📦 下载任务 Tag: 3d_${{ matrix.playtype }}"
           curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/3d_${{ matrix.playtype }}/tasks_3d_${{ matrix.playtype }}.sql.zip
 
           echo "🔓 解压任务表（使用密码）"
@@ -133,5 +133,5 @@ jobs:
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
-          python scripts/run_all.py "${{ matrix.playtype }}" p5
+          python scripts/run_all.py "${{ matrix.playtype }}" 3d
 
