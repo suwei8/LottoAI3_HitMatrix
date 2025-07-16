@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_runner_P5-B
+name: LottoAI3_HitMatrix_runner_P5-A
 
 on:
   workflow_dispatch:
@@ -110,7 +110,7 @@ jobs:
         run: |
           echo "=============================="
           echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
-          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/p5_hitmatrix_${{ matrix.playtype }}.sql.zip
+          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/tasks_p5_${{ matrix.playtype }}.sql.zip
 
           echo "🔓 解压任务表（使用密码）"
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
