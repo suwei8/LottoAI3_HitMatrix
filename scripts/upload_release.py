@@ -20,13 +20,13 @@ if __name__ == "__main__":
     print(f"\n🕒 启动上传任务 ➜ {lottery_type} ➜ {playtype}")
     do_final_dump_and_upload(playtype, lottery_type)
 
-    print("\n📢 正在发送企业微信通知...")
-    result = subprocess.run(
-        [sys.executable, "scripts/send_notify.py", playtype],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace"
-    )
-    print(result.stdout)
-    print(f"✅ 企业微信通知发送状态码: {result.returncode}")
+    # print("\n📢 正在发送企业微信通知...")
+    # result = subprocess.run(
+    #     [sys.executable, "scripts/send_notify.py", playtype],
+    #     capture_output=True,
+    #     text=True,
+    #     encoding="utf-8",
+    #     errors="replace"
+    # )
+    # print(result.stdout)
+    # print(f"✅ 企业微信通知发送状态码: {result.returncode}")
