@@ -1,3 +1,4 @@
+# scripts/analyze_best_tasks.py
 import os, sys, time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
@@ -11,8 +12,8 @@ from utils.config_loader import load_base_config
 from utils.expert_hit_analysis import run_hit_analysis_batch, analyze_expert_hits, get_position_name_map
 
 # ✅ 控制参数
-ENABLE_HIT_CHECK = True
-ENABLE_TRACK_OPEN_RANK = True
+ENABLE_HIT_CHECK = False
+ENABLE_TRACK_OPEN_RANK = False
 CHECK_MODE = "dingwei"
 LOG_SAVE_MODE = False
 
@@ -106,15 +107,16 @@ if __name__ == "__main__":
     filter_position = int(sys.argv[2]) if len(sys.argv) > 2 else None  # 👉 新增行
     lottery_name = get_lottery_name(lottery_type)
     config = load_base_config(lottery_type)
-    result_table = get_table_name(lottery_name, "lottery_results")
+    expert_table = get_table_name(lottery_name, "expert_predictions")
     best_tasks_table = get_table_name(lottery_name, "best_tasks")
 
     engine = get_engine()
     with engine.connect() as conn:
         latest_issue = conn.execute(text(
-            f"SELECT MAX(issue_name) FROM {result_table}"
+            f"SELECT MAX(issue_name) FROM {expert_table}"
         )).scalar()
     issue = latest_issue
+
 
     # ✅ 记录开始时间（可放更前面记录）
     start_time = time.time()
