@@ -1,0 +1,113 @@
+name: LottoAI3_HitMatrix_AnalyzeBest
+
+on:
+  workflow_dispatch:
+    inputs:
+      lottery_type:
+        description: '选择彩种类型'
+        required: true
+        default: 'p5'
+        type: choice
+        options:
+          - p5
+          - 3d
+
+permissions:
+  contents: write
+
+jobs:
+  analyze_best:
+    name: Analyze ${{ inputs.lottery_type }} 分位 ${{ matrix.position }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        position: ${{ fromJson(inputs.lottery_type == 'p5' && '[0,1,2,3,4]' || '[0,1,2]') }}
+
+    services:
+      mysql:
+        image: mysql:8.0.36
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+      BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+      GH_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
+      GITHUB_RUN_NUMBER: ${{ github.run_number }}
+      WECHAT_API_URL: ${{ secrets.WECHAT_API_URL }}
+      WECHAT_API_KEY: ${{ secrets.WECHAT_API_KEY }}
+
+    steps:
+      - name: 🕒 打印时间（UTC + Asia/Shanghai）
+        run: |
+          echo "==== 🕒 当前时间 ===="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "Asia/Shanghai: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+          echo "====================="
+
+      - name: 📥 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 安装 Python 依赖
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 安装 requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 📦 下载并还原数据库（支持 P5/3D）
+        run: |
+          LOTTERY=${{ inputs.lottery_type }}
+          echo "=============================="
+          echo "🎯 开始执行 Download ${LOTTERY}分析表 工作流"
+          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
+          START_TIME=$(date +%s)
+
+          echo "📁 创建目录 & 下载 ZIP"
+          mkdir -p data
+          curl -L -o data/lotto_${LOTTERY}_backup.zip \
+            https://github.com/suwei8/LottoAI3_HitMatrix_date${{ inputs.lottery_type == '3d' && '_3d' || '' }}/releases/download/backup-${LOTTERY}/lotto_${LOTTERY}_backup.zip
+
+          echo "🔓 解压 ZIP"
+          sudo apt-get update && sudo apt-get install -y unzip pv
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_${LOTTERY}_backup.zip
+
+          echo "🚀 恢复数据库（显示导入进度）"
+          gunzip -c data/lotto_${LOTTERY}.sql.gz | \
+            pv -s $(gzip -l data/lotto_${LOTTERY}.sql.gz | awk 'NR==2 {print $2}') | \
+            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+
+          echo "🧹 清理中间文件"
+          rm -rf data/*
+
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "=============================="
+          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
+          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
+
+      - name: 🛠️ 初始化 tasks任务表（含下载、合并、导入）
+        run: |
+          python scripts/init_tables.py ${{ inputs.lottery_type }}
+
+      - name: 📊 分析达标任务并打印命中表现
+        run: |
+          python scripts/analyze_best_tasks.py ${{ inputs.lottery_type }} ${{ matrix.position }}
