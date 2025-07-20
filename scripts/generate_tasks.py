@@ -109,9 +109,9 @@ with engine.begin() as conn:
         for rank in range(1, 11):  # 1 ~ 10
             for hit_rank_list in hit_rank_combinations:
                 enable = {"dingwei_sha": [rank]}
-                skip_if_few = {"dingwei_sha": False}
+                skip_if_few = {"dingwei_sha": True}
                 resolve_tie_mode = {"dingwei_sha": "False"}
-                reverse_on_tie = {"dingwei_sha": False}
+                reverse_on_tie = {"dingwei_sha": True}
 
                 exist = conn.execute(text(f"""
                     SELECT 1 FROM {tasks_table}

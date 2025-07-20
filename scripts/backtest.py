@@ -83,6 +83,8 @@ for task in tasks:
         hit_rate = round(hit_count / total_issues, 4) if total_issues > 0 else 0
 
         log(f"📈 ID={task['id']} ➞ 命中 {hit_count}/{total_issues} ➞ 命中率={hit_rate}")
+        if skip_count > hit_count:
+            log(f"⚠️ 当前任务跳过期数占比过高（{skip_count}/{skip_count + hit_count + miss_count}），数据可靠性较低。")
 
         conn.execute(text(f"""
             UPDATE {tasks_table}
@@ -124,6 +126,11 @@ for task in tasks:
         all_possible = list(range(1, max_rank + 1))
         zero_ranks = [r for r in all_possible if r not in open_rank_counter]
 
+        # ✅ 跳过期数大于命中期数则不写入 best_ranks
+        if skip_count > hit_count:
+            log(f"⚠️ 跳过期数过多（跳过={skip_count} > 命中={hit_count}），本条不写入 best_ranks")
+            continue
+
         conn.execute(text(f"""
             INSERT INTO {best_ranks_table}
             (playtype, position, lookback_n, hit_rank_list, enable,
@@ -142,6 +149,7 @@ for task in tasks:
             created_at=datetime.now()
         ))
 
+
         log(f"📌 已写 best_ranks：未命中位={zero_ranks}")
         best_ranks_count = conn.execute(text(f"SELECT COUNT(*) FROM {best_ranks_table}")).scalar()
         log(f"📊 当前 {best_ranks_table} 总记录数: {best_ranks_count}")
@@ -154,9 +162,9 @@ for task in tasks:
         time.sleep(1)
 
     # 离开 with 以后执行子进程 upload
-    log("📤 单条任务完成 ➞ 启动增量上传")
-    subprocess.run([sys.executable, "scripts/upload_release.py", playtype_en, lottery_type])
-    time.sleep(1)  # 给输出、操作程序给一点恢复时间
+    # log("📤 单条任务完成 ➞ 启动增量上传")
+    # subprocess.run([sys.executable, "scripts/upload_release.py", playtype_en, lottery_type])
+    # time.sleep(1)  # 给输出、操作程序给一点恢复时间
 
 if completed_count % 50 != 0:
     log(f"📦 最后 {completed_count % 50} 条任务未满50 ➞ 执行最终上传")
