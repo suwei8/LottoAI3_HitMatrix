@@ -23,7 +23,7 @@ def analyze_best_tasks_for_issue(issue: str, lottery_name: str, best_tasks_table
     results = []
 
     with engine.begin() as conn:
-        sql = f"SELECT * FROM {best_tasks_table} WHERE hit_rate = 1.0"
+        sql = f"SELECT * FROM {best_tasks_table} WHERE hit_rate >= 0.9"
         if filter_position is not None:
             sql += f" AND position = {filter_position}"
         rows = list(conn.execute(text(sql)).mappings())
