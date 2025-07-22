@@ -61,15 +61,46 @@ jobs:
       - name: 📥 拉取代码
         uses: actions/checkout@v4
 
-      - name: 🐍 安装 Python 依赖
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: 📦 安装 requirements.txt
+      - name: 📦 🛠️ 初始化 best_tasks 达标组合表（支持 P5 / 3D）
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          echo "=============================="
+          echo "🎯 开始执行 Download ${LOTTERY} 分析表 工作流"
+          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
+          START_TIME=$(date +%s)
+          
+          echo "📁 创建目录 & 下载 ZIP"
+          mkdir -p data
+          curl -L -o data/best_tasks_ok.zip \
+            https://github.com/suwei8/LottoAI3_HitMatrix/releases/download/ok/best_tasks_ok.sql.zip
+          
+          echo "🔓 解压 ZIP"
+          sudo apt-get update && sudo apt-get install -y unzip pv
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/best_tasks_ok.zip
+          
+          echo "🚀 恢复数据库（显示导入进度）"
+          pv data/best_tasks_ok.sql | \
+            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+          
+          echo "✅ 检查导入结果：打印前5条记录"
+          
+          echo "📄 表：best_tasks_3d（前5行）"
+          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE \
+            -e "SELECT * FROM best_tasks_3d LIMIT 5;"
+          
+          echo "📄 表：best_tasks_p5（前5行）"
+          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE \
+            -e "SELECT * FROM best_tasks_p5 LIMIT 5;"
+          
+          echo "🧹 清理中间文件"
+          rm -rf data/*
+          
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "=============================="
+          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
+          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=============================="
 
       - name: 📦 下载并还原数据库（支持 P5/3D）
         run: |
@@ -104,36 +135,16 @@ jobs:
           echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=============================="
 
-      - name: 📦 🛠️ 初始化 best_tasks 达标组合表（支持 P5 / 3D）
+      - name: 🐍 安装 Python 依赖
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 安装 requirements.txt
         run: |
-          echo "=============================="
-          echo "🎯 开始执行 Download ${LOTTERY} 分析表 工作流"
-          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "=============================="
-          START_TIME=$(date +%s)
-          
-          echo "📁 创建目录 & 下载 ZIP"
-          mkdir -p data
-          curl -L -o data/best_tasks_ok.zip \
-            https://github.com/suwei8/LottoAI3_HitMatrix/releases/download/ok/best_tasks_ok.sql.zip
-          
-          echo "🔓 解压 ZIP"
-          sudo apt-get update && sudo apt-get install -y unzip pv
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/best_tasks_ok.zip
-          
-          echo "🚀 恢复数据库（显示导入进度）"
-          pv data/best_tasks_ok.sql | \
-            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
-          
-          echo "🧹 清理中间文件"
-          rm -rf data/*
-          
-          END_TIME=$(date +%s)
-          DURATION=$((END_TIME - START_TIME))
-          echo "=============================="
-          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
-          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "=============================="
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
 
       - name: 📊 分析达标任务并打印命中表现
         run: |
