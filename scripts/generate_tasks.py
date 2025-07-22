@@ -103,7 +103,9 @@ with engine.begin() as conn:
     query_playtype_name = playtype_name
     analyze_playtype_name = playtype_name
 
-    hit_rank_combinations = base_config.get("HIT_RANK_COMBINATIONS", [[1], [2], [3], [1,2,3]])
+    hit_rank_combinations = base_config.get("HIT_RANK_COMBINATIONS", [])
+    log(f"✅ 当前加载配置路径: config/{lottery_type}_base.yaml")
+    log(f"✅ HIT_RANK_COMBINATIONS: {hit_rank_combinations}")
 
     for lookback_n in lookback_ns:
         for rank in range(1, 11):  # 1 ~ 10
@@ -113,16 +115,27 @@ with engine.begin() as conn:
                 resolve_tie_mode = {"dingwei_sha": "False"}
                 reverse_on_tie = {"dingwei_sha": True}
 
-                exist = conn.execute(text(f"""
+                # ✅ 跳过 hit_rank_list_first 检查：若为 ["ALL"]，避免触发 JSON→INT 报错
+                skip_hr_first_check = isinstance(hit_rank_list, list) and hit_rank_list == ["ALL"]
+
+                exist_sql = f"""
                     SELECT 1 FROM {tasks_table}
                     WHERE analyze_playtype_name=:analyze_playtype_name
                     AND lookback_n=:lookback_n
                     AND enable_first=:enable_first
-                """), dict(
+                """
+                if not skip_hr_first_check:
+                    exist_sql += " AND hit_rank_list_first=:hr_first"
+
+                params = dict(
                     analyze_playtype_name=analyze_playtype_name,
                     lookback_n=lookback_n,
-                    enable_first=rank
-                )).fetchone()
+                    enable_first=rank,
+                )
+                if not skip_hr_first_check:
+                    params["hr_first"] = hit_rank_list[0]
+
+                exist = conn.execute(text(exist_sql), params).fetchone()
 
                 if exist:
                     log(f"⚠️ 已存在基础组合 ➜ 跳过 lookback_n={lookback_n} ➜ rank={rank} ➜ hit_rank_list={hit_rank_list}")

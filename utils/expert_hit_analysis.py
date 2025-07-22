@@ -281,11 +281,19 @@ def analyze_expert_hits(
                         user_hit_dict[uid] = 0
                 hit_values = sorted(set(user_hit_dict.values()), reverse=True)
 
-                selected_hit_values = []
-                for r in hit_rank_list:
-                    if isinstance(r, int) and abs(r) <= len(hit_values):
-                        selected_hit_values.append(hit_values[r - 1] if r > 0 else hit_values[r])
-                eligible_user_ids = [uid for uid, hit in user_hit_dict.items() if hit in selected_hit_values]
+                # ✅ 支持 ["ALL"] 模式，自动选出所有有命中的 user_id
+                if isinstance(hit_rank_list, list) and len(hit_rank_list) == 1 and hit_rank_list[0] == "ALL":
+                    selected_hit_values = sorted(set(user_hit_dict.values()), reverse=True)
+                    eligible_user_ids = list(user_hit_dict.keys())  # ✅ 所有人都参与
+                    print(f"✅ 检测到 HIT_RANK_COMBINATIONS = ['ALL'] 模式，匹配全部参与用户，共 {len(eligible_user_ids)} 人")
+
+                else:
+                    selected_hit_values = []
+                    for r in hit_rank_list:
+                        if isinstance(r, int) and abs(r) <= len(hit_values):
+                            selected_hit_values.append(hit_values[r - 1] if r > 0 else hit_values[r])
+                    eligible_user_ids = [uid for uid, hit in user_hit_dict.items() if hit in selected_hit_values]
+
 
             print(f"🎯 最终解析出的命中值筛选列表: {selected_hit_values} （命中排名/命中值）")
             print(f"🎯 AI参与数量: {len(eligible_user_ids)}")

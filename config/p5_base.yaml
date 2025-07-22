@@ -15,8 +15,11 @@ lookback_offsets: 0
 HIT_RANK_COMBINATIONS:
   - [1]
   - [2]
-  - [3]
-  - [1, 2, 3]
+  - [-1]
+  - [-2]
+  - [1,2,3,4,5,6]
+  - [-1,-2,-3,-4,-5,-6]
+  - ["ALL"]
 
 # === 全期命中验证模式 ===
 ENABLE_HIT_CHECK: True
