@@ -129,6 +129,16 @@ jobs:
           echo "📥 开始导入 SQL 文件: $SQL_FILE"
           mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
           
+          echo "✅ 检查导入结果：打印前5条记录"
+          
+          echo "📄 表：best_tasks_3d（前5行）"
+          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE \
+            -e "SELECT * FROM best_tasks_3d LIMIT 5;"
+          
+          echo "📄 表：best_tasks_p5（前5行）"
+          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE \
+            -e "SELECT * FROM best_tasks_p5 LIMIT 5;"
+          
           echo "✅ 数据导入完成"
           echo "=============================="
 
