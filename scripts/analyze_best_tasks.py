@@ -23,11 +23,11 @@ def analyze_best_tasks_for_issue(issue: str, lottery_name: str, best_tasks_table
     results = []
 
     with engine.begin() as conn:
-        sql = f"SELECT * FROM {best_tasks_table} WHERE hit_rate >= 1"
+        sql = f"SELECT * FROM {best_tasks_table} WHERE hit_rate >= 0.9"
         if filter_position is not None:
             sql += f" AND position = {filter_position}"
         rows = list(conn.execute(text(sql)).mappings())
-        print(f"\n🎯 共 {len(rows)} 个任务命中率为 1.0", end="")
+        print(f"\n🎯 共 {len(rows)} 个任务命中率为 0.9", end="")
         if filter_position is not None:
             print(f"，分位={filter_position}", end="")
         print("，将逐个分析...")
@@ -98,6 +98,13 @@ def analyze_best_tasks_for_issue(issue: str, lottery_name: str, best_tasks_table
                 "recommend": recommend,
                 "hit_rate": hit_rate
             })
+        # ✅ 删除推荐为 None 的无效任务
+        invalid_ids = [r["id"] for r in results if r["recommend"] is None]
+        if invalid_ids:
+            print(f"\n🧹 共有 {len(invalid_ids)} 个推荐结果为 None 的任务将被删除：{invalid_ids}")
+            delete_sql = f"DELETE FROM {best_tasks_table} WHERE id IN ({','.join(map(str, invalid_ids))})"
+            conn.execute(text(delete_sql))  # 👈 删除执行
+            print(f"✅ 已从数据库中删除 {len(invalid_ids)} 个无效任务。")  # 👈 紧接其后打印
 
     return results
 

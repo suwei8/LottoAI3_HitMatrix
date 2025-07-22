@@ -49,7 +49,7 @@ jobs:
       GITHUB_RUN_NUMBER: ${{ github.run_number }}
       WECHAT_API_URL: ${{ secrets.WECHAT_API_URL }}
       WECHAT_API_KEY: ${{ secrets.WECHAT_API_KEY }}
-
+      EXPORT_DIR: best_tasks_export
     steps:
       - name: 🕒 打印时间（UTC + Asia/Shanghai）
         run: |
@@ -102,7 +102,7 @@ jobs:
           echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=============================="
 
-      - name: 📦 下载并还原数据库（支持 P5/3D）
+      - name: 📦 下载并还原最近30期预测数据备份（支持 P5/3D）
         run: |
           LOTTERY=${{ inputs.lottery_type }}
           echo "=============================="
@@ -110,24 +110,33 @@ jobs:
           echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=============================="
           START_TIME=$(date +%s)
-
-          echo "📁 创建目录 & 下载 ZIP"
+          
           mkdir -p data
+          
+          # ✅ 动态判断仓库名称
+          if [ "$LOTTERY" = "3d" ]; then
+            REPO="LottoAI3_HitMatrix_date_3d"
+          else
+            REPO="LottoAI3_HitMatrix_date"
+          fi
+          
+          echo "📥 下载来自仓库：$REPO"
+          
           curl -L -o data/lotto_${LOTTERY}_backup.zip \
-            https://github.com/suwei8/LottoAI3_HitMatrix_date${{ inputs.lottery_type == '3d' && '_3d' || '' }}/releases/download/backup-${LOTTERY}/lotto_${LOTTERY}_backup.zip
-
+            https://github.com/suwei8/${REPO}/releases/download/backup-${LOTTERY}/lotto_${LOTTERY}_backup.zip
+          
           echo "🔓 解压 ZIP"
           sudo apt-get update && sudo apt-get install -y unzip pv
           unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_${LOTTERY}_backup.zip
-
+          
           echo "🚀 恢复数据库（显示导入进度）"
           gunzip -c data/lotto_${LOTTERY}.sql.gz | \
             pv -s $(gzip -l data/lotto_${LOTTERY}.sql.gz | awk 'NR==2 {print $2}') | \
             mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
-
+          
           echo "🧹 清理中间文件"
           rm -rf data/*
-
+          
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
           echo "=============================="
@@ -149,3 +158,23 @@ jobs:
       - name: 📊 分析达标任务并打印命中表现
         run: |
           python scripts/analyze_best_tasks.py ${{ inputs.lottery_type }} ${{ matrix.position }}
+
+      - name: ⬆️ 导出 best_tasks_3d / p5 并上传至 Releases
+        run: |
+          echo "📁 创建导出目录"
+          mkdir -p best_tasks_export
+
+          echo "📦 导出 SQL 表..."
+          mysqldump -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD \
+            $MYSQL_DATABASE best_tasks_3d best_tasks_p5 > best_tasks_export/best_tasks_ok.sql
+
+          echo "🔐 安装 zip 工具并压缩（密码保护）"
+          sudo apt-get update && sudo apt-get install -y zip
+          cd best_tasks_export
+          zip -P "$BACKUP_PASSWORD" best_tasks_ok.sql.zip best_tasks_ok.sql
+          cd ..
+
+          echo "🚀 上传 ZIP 到 GitHub Releases ➜ tag=ok"
+          gh release upload ok best_tasks_export/best_tasks_ok.sql.zip --clobber
+
+          echo "✅ 完成导出与上传 🎉"
