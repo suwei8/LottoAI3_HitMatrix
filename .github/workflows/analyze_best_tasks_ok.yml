@@ -99,47 +99,59 @@ jobs:
           echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=============================="
 
-      - name: 📦 下载并还原最近30期预测数据备份（支持 P5/3D）
+      - name: 📦 下载并还原最近30期预测数据备份（支持 P5/3D/all）
         run: |
-          LOTTERY=${{ inputs.lottery_type }}
-          echo "=============================="
-          echo "🎯 开始执行 Download ${LOTTERY}分析表 工作流"
-          echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "=============================="
-          START_TIME=$(date +%s)
+          restore_data() {
+            local lottery=$1
+            if [ "$lottery" = "3d" ]; then
+              REPO="LottoAI3_HitMatrix_date_3d"
+            else
+              REPO="LottoAI3_HitMatrix_date"
+            fi
           
-          mkdir -p data
+            echo "=============================="
+            echo "🎯 开始执行 Download $lottery 预测数据备份"
+            echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "=============================="
+            START_TIME=$(date +%s)
           
-          # ✅ 动态判断仓库名称
-          if [ "$LOTTERY" = "3d" ]; then
-            REPO="LottoAI3_HitMatrix_date_3d"
+            mkdir -p data
+          
+            echo "📥 下载来自仓库：$REPO"
+            curl -L -o data/lotto_${lottery}_backup.zip \
+              https://github.com/suwei8/${REPO}/releases/download/backup-${lottery}/lotto_${lottery}_backup.zip
+          
+            echo "🔓 解压 ZIP"
+            sudo apt-get update && sudo apt-get install -y unzip pv
+            unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_${lottery}_backup.zip
+          
+            echo "🚀 恢复数据库（显示导入进度）"
+            gunzip -c data/lotto_${lottery}.sql.gz | \
+              pv -s $(gzip -l data/lotto_${lottery}.sql.gz | awk 'NR==2 {print $2}') | \
+              mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+          
+            echo "🧹 清理中间文件"
+            rm -rf data/*
+          
+            END_TIME=$(date +%s)
+            DURATION=$((END_TIME - START_TIME))
+            echo "=============================="
+            echo "✅ $lottery 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
+            echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "=============================="
+          }
+          
+          if [[ "${{ inputs.lottery_type }}" == "3d" ]]; then
+            restore_data 3d
+          elif [[ "${{ inputs.lottery_type }}" == "p5" ]]; then
+            restore_data p5
+          elif [[ "${{ inputs.lottery_type }}" == "all" ]]; then
+            restore_data 3d
+            restore_data p5
           else
-            REPO="LottoAI3_HitMatrix_date"
+            echo "❌ 无效 lottery_type: ${{ inputs.lottery_type }}"
+            exit 1
           fi
-          
-          echo "📥 下载来自仓库：$REPO"
-          
-          curl -L -o data/lotto_${LOTTERY}_backup.zip \
-            https://github.com/suwei8/${REPO}/releases/download/backup-${LOTTERY}/lotto_${LOTTERY}_backup.zip
-          
-          echo "🔓 解压 ZIP"
-          sudo apt-get update && sudo apt-get install -y unzip pv
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_${LOTTERY}_backup.zip
-          
-          echo "🚀 恢复数据库（显示导入进度）"
-          gunzip -c data/lotto_${LOTTERY}.sql.gz | \
-            pv -s $(gzip -l data/lotto_${LOTTERY}.sql.gz | awk 'NR==2 {print $2}') | \
-            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
-          
-          echo "🧹 清理中间文件"
-          rm -rf data/*
-          
-          END_TIME=$(date +%s)
-          DURATION=$((END_TIME - START_TIME))
-          echo "=============================="
-          echo "✅ 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
-          echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "=============================="
 
       - name: 🐍 安装 Python 依赖
         uses: actions/setup-python@v5
