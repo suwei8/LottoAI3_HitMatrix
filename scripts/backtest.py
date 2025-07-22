@@ -162,9 +162,9 @@ for task in tasks:
         time.sleep(1)
 
     # 离开 with 以后执行子进程 upload
-    # log("📤 单条任务完成 ➞ 启动增量上传")
-    # subprocess.run([sys.executable, "scripts/upload_release.py", playtype_en, lottery_type])
-    # time.sleep(1)  # 给输出、操作程序给一点恢复时间
+    log("📤 单条任务完成 ➞ 启动增量上传")
+    subprocess.run([sys.executable, "scripts/upload_release.py", playtype_en, lottery_type])
+    time.sleep(1)  # 给输出、操作程序给一点恢复时间
 
 if completed_count % 50 != 0:
     log(f"📦 最后 {completed_count % 50} 条任务未满50 ➞ 执行最终上传")
