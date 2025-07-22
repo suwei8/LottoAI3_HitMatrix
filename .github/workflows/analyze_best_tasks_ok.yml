@@ -1,4 +1,4 @@
-name: LottoAI3_HitMatrix_AnalyzeBest
+name: LottoAI3_HitMatrix_AnalyzeBest-达标组合池检验
 
 on:
   workflow_dispatch:
