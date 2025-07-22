@@ -166,6 +166,7 @@ jobs:
 
       - name: 📊 分析达标任务（全部分位串行处理）
         run: |
+          set -x  # ✅ 打开命令回显
           LOTTERY=${{ inputs.lottery_type }}
           
           run_analysis() {
@@ -189,6 +190,7 @@ jobs:
             echo "❌ 未知彩种类型: $LOTTERY"
             exit 1
           fi
+
 
       - name: ⬆️ 导出 best_tasks_3d / p5 并上传至 Releases
         run: |
