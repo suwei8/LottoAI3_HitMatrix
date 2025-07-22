@@ -2,6 +2,8 @@ name: LottoAI3_HitMatrix_runner_3D-B
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 */7 * * *"
 
 permissions:
   contents: write
@@ -40,7 +42,7 @@ jobs:
           "ding_4x4x4_shi",
           "ding_5x5x5_bai",
         ]
-      max-parallel: 5
+      max-parallel: 12
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -63,17 +65,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install requirements
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: 📦 下载并还原 3D备份（含进度显示 + 耗时统计）
+      - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
         run: |
           echo "=============================="
           echo "🎯 开始执行 Download P5分析表 工作流"
@@ -83,18 +75,16 @@ jobs:
 
           echo "📁 创建目录 & 下载 ZIP"
           mkdir -p data
-          gh release download backup-3d \
-            --pattern "lotto_3d_backup.zip" \
-            --repo suwei8/LottoAI3_HitMatrix_date_3d \
-            --dir data
+          curl -L -o data/lotto_p5_backup.zip \
+            https://github.com/suwei8/lotto_ai3_v2-Backup_data/releases/download/backup-p5/lotto_p5_backup.zip
 
           echo "🔓 解压 ZIP"
           sudo apt-get update && sudo apt-get install -y unzip pv
-          unzip -P "${{ secrets.BACKUP_PASSWORD }}" -d data/ data/lotto_3d_backup.zip
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_p5_backup.zip
 
           echo "🚀 恢复数据库（显示导入进度）"
-          gunzip -c data/lotto_3d.sql.gz | \
-            pv -s $(gzip -l data/lotto_3d.sql.gz | awk 'NR==2 {print $2}') | \
+          gunzip -c data/lotto_p5.sql.gz | \
+            pv -s $(gzip -l data/lotto_p5.sql.gz | awk 'NR==2 {print $2}') | \
             mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
 
           echo "🧹 清理中间文件"
@@ -110,32 +100,39 @@ jobs:
       - name: 📥 下载并还原回测任务表（含解压 + 导入数据库）
         run: |
           echo "=============================="
-          echo "📦 下载任务 Tag: 3d_${{ matrix.playtype }}"
-          gh release download 3d_${{ matrix.playtype }} \
-            --pattern "3d_tasks_${{ matrix.playtype }}.sql.zip" \
-            --repo suwei8/LottoAI3_HitMatrix_date_3d \
-            --dir data
+          echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
+          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/p5_tasks_${{ matrix.playtype }}.sql.zip
 
           echo "🔓 解压任务表（使用密码）"
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} data/3d_tasks_${{ matrix.playtype }}.sql.zip -d data/
-
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
+          
           echo "📁 解压结果如下："
           ls -lh data/
-
+          
+          # 自动寻找解压后的 .sql 文件
           SQL_FILE=$(find data/ -name "*.sql" | head -n 1)
           if [ -z "$SQL_FILE" ]; then
             echo "❌ 未找到解压后的 .sql 文件"
             exit 1
           fi
-
+          
           echo "📥 开始导入 SQL 文件: $SQL_FILE"
           mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
 
           echo "✅ 数据导入完成"
           echo "=============================="
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
-          python scripts/run_all.py "${{ matrix.playtype }}" 3d
+          python scripts/run_all.py "${{ matrix.playtype }}" p5
 

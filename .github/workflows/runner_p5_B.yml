@@ -2,6 +2,8 @@ name: LottoAI3_HitMatrix_runner_P5-B
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 */7 * * *"
 
 permissions:
   contents: write
@@ -41,7 +43,7 @@ jobs:
           "wanwei_ding3",
           "wanwei_ding1",
         ]
-      max-parallel: 13
+      max-parallel: 12
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -63,16 +65,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install requirements
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
 
       - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
         run: |
@@ -127,10 +119,19 @@ jobs:
           
           echo "📥 开始导入 SQL 文件: $SQL_FILE"
           mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < "$SQL_FILE"
-          
+
           echo "✅ 数据导入完成"
           echo "=============================="
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
