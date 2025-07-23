@@ -56,19 +56,31 @@ jobs:
             --health-retries=30 \
             mysql:8.0.36
 
-      - name: 🕓 等待 MySQL 服务启动
+      - name: 🕓 等待 MySQL 容器变为 healthy
         run: |
-          echo "等待 MySQL 容器准备就绪..."
+          CONTAINER=mysql-service-${{ github.run_id }}
+          echo "等待容器 $CONTAINER 变为 healthy ..."
+          
           for i in {1..30}; do
-            if docker exec mysql-service mysqladmin ping -h 127.0.0.1 --silent; then
-              echo "✅ MySQL 已启动"
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER" 2>/dev/null || echo "notfound")
+          
+            if [[ "$STATUS" == "healthy" ]]; then
+              echo "✅ MySQL 容器健康 ✔️"
               exit 0
+            elif [[ "$STATUS" == "unhealthy" ]]; then
+              echo "❌ MySQL 容器 unhealthy ❗"
+              docker logs "$CONTAINER"
+              exit 1
+            elif [[ "$STATUS" == "notfound" ]]; then
+              echo "⏳ 容器尚未创建好 ($i)..."
+            else
+              echo "⏳ 当前状态：$STATUS ($i)..."
             fi
-            echo "⏳ 等待中 ($i)..."
             sleep 2
           done
-          echo "❌ MySQL 启动超时"
-          docker logs mysql-service
+          
+          echo "❌ 超时：容器 30 秒内未变为 healthy"
+          docker logs "$CONTAINER"
           exit 1
 
       - name: 📦 🛠️ 初始化 best_tasks 达标组合表（支持 P5 / 3D）
