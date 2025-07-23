@@ -124,96 +124,96 @@ jobs:
           echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=============================="
 
-#      - name: 📦 下载并还原最近30期预测数据备份（支持 P5/3D/all）
-#        run: |
-#          restore_data() {
-#            local lottery=$1
-#            if [ "$lottery" = "3d" ]; then
-#              REPO="LottoAI3_HitMatrix_date_3d"
-#            else
-#              REPO="LottoAI3_HitMatrix_date"
-#            fi
-#
-#            echo "=============================="
-#            echo "🎯 开始执行 Download $lottery 预测数据备份"
-#            echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
-#            echo "=============================="
-#            START_TIME=$(date +%s)
-#
-#            mkdir -p data
-#
-#            echo "📥 下载来自仓库：$REPO"
-#            curl -L -o data/lotto_${lottery}_backup.zip \
-#              https://github.com/suwei8/${REPO}/releases/download/backup-${lottery}/lotto_${lottery}_backup.zip
-#
-#            echo "🔓 解压 ZIP"
-#            sudo apt-get update && sudo apt-get install -y unzip pv
-#            unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_${lottery}_backup.zip
-#
-#            echo "🚀 恢复数据库（显示导入进度）"
-#            gunzip -c data/lotto_${lottery}.sql.gz | \
-#              pv -s $(gzip -l data/lotto_${lottery}.sql.gz | awk 'NR==2 {print $2}') | \
-#              mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
-#
-#            echo "🧹 清理中间文件"
-#            rm -rf data/*
-#
-#            END_TIME=$(date +%s)
-#            DURATION=$((END_TIME - START_TIME))
-#            echo "=============================="
-#            echo "✅ $lottery 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
-#            echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
-#            echo "=============================="
-#          }
-#
-#          if [[ "${{ inputs.lottery_type }}" == "3d" ]]; then
-#            restore_data 3d
-#          elif [[ "${{ inputs.lottery_type }}" == "p5" ]]; then
-#            restore_data p5
-#          elif [[ "${{ inputs.lottery_type }}" == "all" ]]; then
-#            restore_data 3d
-#            restore_data p5
-#          else
-#            echo "❌ 无效 lottery_type: ${{ inputs.lottery_type }}"
-#            exit 1
-#          fi
+      - name: 📦 下载并还原最近30期预测数据备份（支持 P5/3D/all）
+        run: |
+          restore_data() {
+            local lottery=$1
+            if [ "$lottery" = "3d" ]; then
+              REPO="LottoAI3_HitMatrix_date_3d"
+            else
+              REPO="LottoAI3_HitMatrix_date"
+            fi
+          
+            echo "=============================="
+            echo "🎯 开始执行 Download $lottery 预测数据备份"
+            echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "=============================="
+            START_TIME=$(date +%s)
+          
+            mkdir -p data
+          
+            echo "📥 下载来自仓库：$REPO"
+            curl -L -o data/lotto_${lottery}_backup.zip \
+              https://github.com/suwei8/${REPO}/releases/download/backup-${lottery}/lotto_${lottery}_backup.zip
+          
+            echo "🔓 解压 ZIP"
+            sudo apt-get update && sudo apt-get install -y unzip pv
+            unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_${lottery}_backup.zip
+          
+            echo "🚀 恢复数据库（显示导入进度）"
+            gunzip -c data/lotto_${lottery}.sql.gz | \
+              pv -s $(gzip -l data/lotto_${lottery}.sql.gz | awk 'NR==2 {print $2}') | \
+              mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+          
+            echo "🧹 清理中间文件"
+            rm -rf data/*
+          
+            END_TIME=$(date +%s)
+            DURATION=$((END_TIME - START_TIME))
+            echo "=============================="
+            echo "✅ $lottery 执行完毕：耗时 ${DURATION} 秒（约 $((DURATION / 60)) 分钟）"
+            echo "⏱ 结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "=============================="
+          }
+          
+          if [[ "${{ inputs.lottery_type }}" == "3d" ]]; then
+            restore_data 3d
+          elif [[ "${{ inputs.lottery_type }}" == "p5" ]]; then
+            restore_data p5
+          elif [[ "${{ inputs.lottery_type }}" == "all" ]]; then
+            restore_data 3d
+            restore_data p5
+          else
+            echo "❌ 无效 lottery_type: ${{ inputs.lottery_type }}"
+            exit 1
+          fi
 
-#      - name: 🐍 安装 Python 依赖
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.11'
-#
-#      - name: 📦 安装 requirements.txt
-#        run: |
-#          python -m pip install --upgrade pip
-#          pip install -r requirements.txt
+      - name: 🐍 安装 Python 依赖
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 安装 requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
 
-#      - name: 📊 分析达标任务（全部分位串行处理）
-#        run: |
-#          LOTTERY=${{ inputs.lottery_type }}
-#
-#          run_analysis() {
-#            local lottery=$1
-#            local max_pos=$2
-#            echo "===== 🎯 分析 $lottery ====="
-#            for pos in $(seq 0 $max_pos); do
-#              echo "➡️ 分析 $lottery - 分位 $pos"
-#              python scripts/analyze_best_tasks.py $lottery $pos
-#            done
-#          }
-#
-#          if [[ "$LOTTERY" == "3d" ]]; then
-#            run_analysis 3d 2
-#          elif [[ "$LOTTERY" == "p5" ]]; then
-#            run_analysis p5 4
-#          elif [[ "$LOTTERY" == "all" ]]; then
-#            run_analysis 3d 2
-#            run_analysis p5 4
-#          else
-#            echo "❌ 未知彩种类型: $LOTTERY"
-#            exit 1
-#          fi
+      - name: 📊 分析达标任务（全部分位串行处理）
+        run: |
+          LOTTERY=${{ inputs.lottery_type }}
+          
+          run_analysis() {
+            local lottery=$1
+            local max_pos=$2
+            echo "===== 🎯 分析 $lottery ====="
+            for pos in $(seq 0 $max_pos); do
+              echo "➡️ 分析 $lottery - 分位 $pos"
+              python scripts/analyze_best_tasks.py $lottery $pos
+            done
+          }
+          
+          if [[ "$LOTTERY" == "3d" ]]; then
+            run_analysis 3d 2
+          elif [[ "$LOTTERY" == "p5" ]]; then
+            run_analysis p5 4
+          elif [[ "$LOTTERY" == "all" ]]; then
+            run_analysis 3d 2
+            run_analysis p5 4
+          else
+            echo "❌ 未知彩种类型: $LOTTERY"
+            exit 1
+          fi
 
       - name: ⬆️ 导出 best_tasks_3d / p5 并上传至 Releases
         run: |
