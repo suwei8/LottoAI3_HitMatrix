@@ -64,26 +64,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 📦 下载并还原 P5备份（含进度显示 + 耗时统计）
+      - name: 📦 下载并还原 3d备份（含进度显示 + 耗时统计）
         run: |
           echo "=============================="
-          echo "🎯 开始执行 Download P5分析表 工作流"
+          echo "🎯 开始执行 Download 3d分析表 工作流"
           echo "⏱ 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=============================="
           START_TIME=$(date +%s)
 
           echo "📁 创建目录 & 下载 ZIP"
           mkdir -p data
-          curl -L -o data/lotto_p5_backup.zip \
-            https://github.com/suwei8/lotto_ai3_v2-Backup_data/releases/download/backup-p5/lotto_p5_backup.zip
+          curl -L -o data/lotto_3d_backup.zip \
+            https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/backup-3d/lotto_3d_backup.zip
 
           echo "🔓 解压 ZIP"
           sudo apt-get update && sudo apt-get install -y unzip pv
-          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_p5_backup.zip
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/lotto_3d_backup.zip
 
           echo "🚀 恢复数据库（显示导入进度）"
-          gunzip -c data/lotto_p5.sql.gz | \
-            pv -s $(gzip -l data/lotto_p5.sql.gz | awk 'NR==2 {print $2}') | \
+          gunzip -c data/lotto_3d.sql.gz | \
+            pv -s $(gzip -l data/lotto_3d.sql.gz | awk 'NR==2 {print $2}') | \
             mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
 
           echo "🧹 清理中间文件"
@@ -99,8 +99,8 @@ jobs:
       - name: 📥 下载并还原回测任务表（含解压 + 导入数据库）
         run: |
           echo "=============================="
-          echo "📦 下载任务 Tag: p5_${{ matrix.playtype }}"
-          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/p5_${{ matrix.playtype }}/p5_tasks_${{ matrix.playtype }}.sql.zip
+          echo "📦 下载任务 Tag: 3d_${{ matrix.playtype }}"
+          curl -L -o tasks.zip https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/3d_${{ matrix.playtype }}/3d_tasks_${{ matrix.playtype }}.sql.zip
 
           echo "🔓 解压任务表（使用密码）"
           unzip -P ${{ secrets.BACKUP_PASSWORD }} tasks.zip -d data/
@@ -133,5 +133,5 @@ jobs:
 
       - name: Run All (自动闭环 + 覆盖上传)
         run: |
-          python scripts/run_all.py "${{ matrix.playtype }}" p5
+          python scripts/run_all.py "${{ matrix.playtype }}" 3d
 
