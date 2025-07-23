@@ -20,21 +20,6 @@ jobs:
   analyze_best:
     name: Analyze best tasks for ${{ inputs.lottery_type }}
     runs-on: [self-hosted, ARM64]
-
-    services:
-      mysql:
-        image: mysql:8.0.36
-        env:
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=30
-
     env:
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
@@ -57,6 +42,34 @@ jobs:
 
       - name: 📥 拉取代码
         uses: actions/checkout@v4
+
+      - name: 🐳 启动 MySQL 容器
+        run: |
+          docker run -d \
+            --name mysql-service-${{ github.run_id }} \
+            -e MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_PASSWORD }} \
+            -e MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }} \
+            -p 3306:3306 \
+            --health-cmd="mysqladmin ping -h 127.0.0.1 --silent" \
+            --health-interval=10s \
+            --health-timeout=5s \
+            --health-retries=30 \
+            mysql:8.0.36
+
+      - name: 🕓 等待 MySQL 服务启动
+        run: |
+          echo "等待 MySQL 容器准备就绪..."
+          for i in {1..30}; do
+            if docker exec mysql-service mysqladmin ping -h 127.0.0.1 --silent; then
+              echo "✅ MySQL 已启动"
+              exit 0
+            fi
+            echo "⏳ 等待中 ($i)..."
+            sleep 2
+          done
+          echo "❌ MySQL 启动超时"
+          docker logs mysql-service
+          exit 1
 
       - name: 📦 🛠️ 初始化 best_tasks 达标组合表（支持 P5 / 3D）
         run: |
@@ -209,3 +222,8 @@ jobs:
           gh release upload ok best_tasks_export/best_tasks_ok.sql.zip --clobber
 
           echo "✅ 完成导出与上传 🎉"
+
+      - name: 🧹 清理 MySQL 容器
+        if: always()
+        run: |
+          docker rm -f mysql-service-${{ github.run_id }} || true
