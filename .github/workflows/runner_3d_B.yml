@@ -2,8 +2,6 @@ name: LottoAI3_HitMatrix_runner_3D-B
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 */10 * * *"
 
 permissions:
   contents: write
