@@ -93,6 +93,16 @@ jobs:
         run: |
           python scripts/init_tables.py ${{ inputs.lottery_type }}
 
+
+      - name: 🧩 下载并导入全局analyzed_tasks_passed表
+        run: |
+          curl -L -o data/analyzed_tasks_passed.sql \
+            https://github.com/suwei8/LottoAI3_HitMatrix/releases/download/analyzed_tasks_passed/analyzed_tasks_passed.sql
+
+          echo "📤 导入 analyzed_tasks_passed.sql 到数据库..."
+          mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < data/analyzed_tasks_passed.sql
+
+
       - name: ✅ 开始执行分析run_from_best_tasks
         run: |
           python scripts/run_from_best_tasks.py ${{ inputs.lottery_type }}
