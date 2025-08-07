@@ -93,6 +93,10 @@ jobs:
         run: |
           python scripts/init_tables.py ${{ inputs.lottery_type }}
 
+      - name: ✅ 开始执行分析run_from_best_tasks
+        run: |
+          python scripts/run_from_best_tasks.py ${{ inputs.lottery_type }}
+
       - name: 🚀 导出并上传 analyzed_tasks_passed_xx 表
         run: |
           python scripts/export_passed_tasks.py ${{ inputs.lottery_type }}
