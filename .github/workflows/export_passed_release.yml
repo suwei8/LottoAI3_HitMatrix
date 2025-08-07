@@ -1,0 +1,98 @@
+name: LottoAI3_HitMatrix_ExportPassedRelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      lottery_type:
+        description: '选择彩种类型'
+        required: true
+        default: '3d'
+        type: choice
+        options:
+          - 3d
+          - p3
+          - p5
+
+permissions:
+  contents: write
+
+jobs:
+  export_passed:
+    name: Export ${{ inputs.lottery_type }} Passed Tasks
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0.36
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+      BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+      GITHUB_REPO: suwei8/LottoAI3_HitMatrix
+
+    steps:
+      - name: 📥 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 安装依赖
+        run: |
+          pip install -r requirements.txt
+          pip install pyminizip
+
+      - name: 📦 下载并还原数据库备份（支持 3d/p3/p5）
+        run: |
+          LOTTERY=${{ inputs.lottery_type }}
+          mkdir -p data
+
+          if [ "$LOTTERY" = "3d" ]; then
+            ZIP_URL="https://github.com/suwei8/LottoAI3_HitMatrix_date_3d/releases/download/backup-3d/lotto_3d_backup.zip"
+            SQL_NAME="lotto_3d"
+          elif [ "$LOTTERY" = "p3" ]; then
+            ZIP_URL="https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/backup-p3/lotto_p3_backup.zip"
+            SQL_NAME="lotto_p3"
+          elif [ "$LOTTERY" = "p5" ]; then
+            ZIP_URL="https://github.com/suwei8/LottoAI3_HitMatrix_date/releases/download/backup-p5/lotto_p5_backup.zip"
+            SQL_NAME="lotto_p5"
+          else
+            echo "❌ 不支持的 lottery_type: $LOTTERY"
+            exit 1
+          fi
+
+          echo "📥 下载: $ZIP_URL"
+          curl -L -o data/${SQL_NAME}_backup.zip "$ZIP_URL"
+
+          echo "🔓 解压 ZIP"
+          sudo apt-get update && sudo apt-get install -y unzip pv gzip
+          unzip -P ${{ secrets.BACKUP_PASSWORD }} -d data/ data/${SQL_NAME}_backup.zip
+
+          echo "🚀 恢复数据库"
+          gunzip -c data/${SQL_NAME}.sql.gz | \
+            pv -s $(gzip -l data/${SQL_NAME}.sql.gz | awk 'NR==2 {print $2}') | \
+            mysql -h$MYSQL_HOST -P$MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
+
+      - name: 🛠️ 初始化任务表（合并 tasks）
+        run: |
+          python scripts/init_tables.py ${{ inputs.lottery_type }}
+
+      - name: 🚀 导出并上传 analyzed_tasks_passed_xx 表
+        run: |
+          python scripts/export_passed_tasks.py ${{ inputs.lottery_type }}
